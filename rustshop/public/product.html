@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Product | Rust Dominion</title>
+    <meta name="description" content="Rust product details." />
+    <meta property="og:title" content="Product | Rust Dominion" />
+    <meta property="og:description" content="Premium Rust items with instant delivery." />
+    <meta property="og:type" content="product" />
+    <link rel="icon" href="assets/img/favicon.svg" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header-inner">
+        <a class="logo" href="index.html">
+          <span>⚙</span>
+          <span>Rust Dominion</span>
+        </a>
+        <nav class="nav">
+          <a href="catalog.html">Catalog</a>
+          <a href="support.html">Support</a>
+          <a href="account.html">Account</a>
+        </nav>
+        <div class="search">
+          <span>🔍</span>
+          <input type="search" placeholder="Search items" aria-label="Search items" />
+        </div>
+        <div class="nav">
+          <a class="cart-pill" href="cart.html">🛒 <span data-cart-count>0</span></a>
+          <a class="btn btn-secondary" href="account.html">Sign In</a>
+        </div>
+        <button class="btn btn-ghost" data-drawer-toggle aria-label="Open menu">☰</button>
+      </div>
+    </header>
+
+    <div class="drawer" data-drawer>
+      <div class="drawer-panel">
+        <nav class="grid">
+          <a href="catalog.html">Catalog</a>
+          <a href="support.html">Support</a>
+          <a href="account.html">Account</a>
+          <a href="cart.html">Cart</a>
+        </nav>
+      </div>
+    </div>
+
+    <main class="section">
+      <div class="container">
+        <div class="breadcrumb">
+          <a href="index.html">Home</a>
+          <span>›</span>
+          <a href="catalog.html">Catalog</a>
+          <span>›</span>
+          <span>Product</span>
+        </div>
+        <div id="product-detail">
+          <div class="card">Loading product...</div>
+        </div>
+      </div>
+    </main>
+
+    <section class="section">
+      <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2>Related items</h2>
+          <a class="btn btn-ghost" href="catalog.html">View all</a>
+        </div>
+        <div class="carousel" id="related-grid"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="logo">
+            <span>⚙</span>
+            <span>Rust Dominion</span>
+          </div>
+          <p class="muted">Premium Rust store for survivors who want the edge.</p>
+        </div>
+        <div>
+          <strong>Support</strong>
+          <div class="grid">
+            <a href="support.html">FAQ</a>
+            <a href="#">Contact</a>
+          </div>
+        </div>
+        <div>
+          <strong>Legal</strong>
+          <div class="grid">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Refunds</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/product.js"></script>
+  </body>
+</html>

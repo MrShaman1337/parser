@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Catalog | Rust Dominion</title>
+    <meta name="description" content="Browse Rust kits, skins, VIP, and more." />
+    <meta property="og:title" content="Catalog | Rust Dominion" />
+    <meta property="og:description" content="Premium Rust items with instant delivery." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="assets/img/favicon.svg" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header-inner">
+        <a class="logo" href="index.html">
+          <span>⚙</span>
+          <span>Rust Dominion</span>
+        </a>
+        <nav class="nav">
+          <a href="catalog.html">Catalog</a>
+          <a href="support.html">Support</a>
+          <a href="account.html">Account</a>
+        </nav>
+        <div class="search">
+          <span>🔍</span>
+          <input type="search" placeholder="Search items" aria-label="Search items" />
+        </div>
+        <div class="nav">
+          <a class="cart-pill" href="cart.html">🛒 <span data-cart-count>0</span></a>
+          <a class="btn btn-secondary" href="account.html">Sign In</a>
+        </div>
+        <button class="btn btn-ghost" data-drawer-toggle aria-label="Open menu">☰</button>
+      </div>
+    </header>
+
+    <div class="drawer" data-drawer>
+      <div class="drawer-panel">
+        <nav class="grid">
+          <a href="catalog.html">Catalog</a>
+          <a href="support.html">Support</a>
+          <a href="account.html">Account</a>
+          <a href="cart.html">Cart</a>
+        </nav>
+      </div>
+    </div>
+
+    <main class="section">
+      <div class="container">
+        <div class="breadcrumb">
+          <a href="index.html">Home</a>
+          <span>›</span>
+          <span>Catalog</span>
+        </div>
+        <h1>Catalog</h1>
+        <div class="filters" style="margin: 1.5rem 0;">
+          <input id="filter-search" type="search" placeholder="Search in catalog" />
+          <input id="filter-min" type="number" placeholder="Min price" />
+          <input id="filter-max" type="number" placeholder="Max price" />
+          <select id="filter-tag">
+            <option value="">All tags</option>
+            <option value="kits">Kits</option>
+            <option value="vip">VIP</option>
+            <option value="skins">Skins</option>
+            <option value="currency">Currency</option>
+            <option value="resources">Resources</option>
+          </select>
+          <select id="filter-sort">
+            <option value="popular">Sort: Popular</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+          </select>
+        </div>
+
+        <div class="product-grid" id="catalog-grid"></div>
+
+        <div style="display: flex; justify-content: center; margin-top: 2rem;" id="pagination"></div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="logo">
+            <span>⚙</span>
+            <span>Rust Dominion</span>
+          </div>
+          <p class="muted">Premium Rust store for survivors who want the edge.</p>
+        </div>
+        <div>
+          <strong>Store</strong>
+          <div class="grid">
+            <a href="catalog.html">Catalog</a>
+            <a href="support.html">Support</a>
+            <a href="account.html">Account</a>
+          </div>
+        </div>
+        <div>
+          <strong>Legal</strong>
+          <div class="grid">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Refunds</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/catalog.js"></script>
+  </body>
+</html>

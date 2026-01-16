@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{store.name}} | Premium Rust Store</title>
+    <meta name="description" content="Premium Rust kits, skins, and VIP perks. Fast delivery and secure checkout." />
+    <meta property="og:title" content="{{store.name}} | Premium Rust Store" />
+    <meta property="og:description" content="High-converting Rust shop with premium kits, skins, and VIP." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/assets/img/og-cover.jpg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="/assets/css/theme.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header-inner">
+        <a class="logo" href="/home" data-gs-store-name>
+          <span>⚙</span>
+          <span>{{store.name}}</span>
+        </a>
+        <nav class="nav">
+          <a href="/catalog">Catalog</a>
+          <a href="/support">Support</a>
+          <a href="/account">Account</a>
+        </nav>
+        <div class="search">
+          <span>🔍</span>
+          <input type="search" placeholder="Search items" data-gs-search />
+        </div>
+        <div class="nav">
+          <button class="cart-pill" data-modal-toggle data-modal-target="#modal-cart">
+            🛒 <span data-gs-cart-count>{{cart.count}}</span>
+          </button>
+          <button class="btn btn-secondary" data-gs-action="login" data-modal-toggle data-modal-target="#modal-login">Sign in</button>
+        </div>
+        <button class="btn btn-ghost" data-drawer-toggle aria-label="Open menu">☰</button>
+      </div>
+    </header>
+
+    <div class="drawer" data-drawer>
+      <div class="drawer-panel">
+        <div class="logo" style="margin-bottom: 2rem;">
+          <span>⚙</span>
+          <span>{{store.name}}</span>
+        </div>
+        <nav class="grid">
+          <a href="/catalog">Catalog</a>
+          <a href="/support">Support</a>
+          <a href="/account">Account</a>
+          <a href="/cart">Cart</a>
+        </nav>
+        <div style="margin-top: 2rem;">
+          <button class="btn btn-secondary" data-gs-action="login" data-modal-toggle data-modal-target="#modal-login" style="width: 100%;">Connect Account</button>
+        </div>
+      </div>
+    </div>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-grid">
+          <div>
+            <div class="badge">Official Rust Marketplace</div>
+            <h1>Gear up fast. Dominate the wipe.</h1>
+            <p>Premium Rust kits, skins, and VIP perks delivered instantly. Secure checkout, real-time stock, and elite rewards.</p>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+              <a class="btn btn-primary" href="/catalog">Open Store</a>
+              <button class="btn btn-secondary" data-gs-action="login">Sign in with Steam</button>
+            </div>
+            <div class="stats">
+              <div class="stat">
+                <strong data-gs-stat="orders">32,409</strong>
+                <span class="muted">Orders delivered</span>
+              </div>
+              <div class="stat">
+                <strong data-gs-stat="players">8,142</strong>
+                <span class="muted">Active players</span>
+              </div>
+              <div class="stat">
+                <strong data-gs-stat="uptime">99.98%</strong>
+                <span class="muted">Server uptime</span>
+              </div>
+            </div>
+          </div>
+          <div class="card glass">
+            <h3>Featured Drop</h3>
+            <p class="muted">Limited-time Rust VIP with priority queue, raid alerts, and exclusive skins.</p>
+            <div class="price">$24.00 <del>$32.00</del></div>
+            <button class="btn btn-primary" data-gs-action="add-to-cart" data-gs-product-id="vip-001">Add VIP</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+            <h2>Featured</h2>
+            <a class="btn btn-ghost" href="/catalog">View all</a>
+          </div>
+          <div class="product-grid" data-gs-products>
+            {{#products.featured}}
+            <article class="product-card" data-gs-product>
+              <div style="position: relative;">
+                <img src="{{image}}" alt="{{name}}" loading="lazy" srcset="{{image}} 1x, {{image_2x}} 2x" sizes="(max-width: 600px) 100vw, 300px" data-gs-product-image data-gs-product-srcset />
+                <span class="badge discount">-{{discount}}%</span>
+              </div>
+              <div>
+                <h3 data-gs-product-title>{{name}}</h3>
+                <p class="muted" data-gs-product-perks>{{perks}}</p>
+              </div>
+              <div class="price" data-gs-product-price>{{price}} <del>{{price_compare}}</del></div>
+              <button class="btn btn-primary" data-gs-action="add-to-cart" data-gs-product-id="{{id}}">Add to cart</button>
+            </article>
+            {{/products.featured}}
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <h2>Shop by category</h2>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 1.5rem;">
+            <a class="card" href="/catalog?category=kits">Kits</a>
+            <a class="card" href="/catalog?category=skins">Skins</a>
+            <a class="card" href="/catalog?category=vip">VIP</a>
+            <a class="card" href="/catalog?category=currency">Currency</a>
+            <a class="card" href="/catalog?category=resources">Resources</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <h2>How it works</h2>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 1.5rem;">
+            <div class="card">
+              <h3>1. Connect</h3>
+              <p class="muted">Sign in with Steam and verify your Rust profile.</p>
+            </div>
+            <div class="card">
+              <h3>2. Choose</h3>
+              <p class="muted">Select kits, skins, or VIP perks tailored to your playstyle.</p>
+            </div>
+            <div class="card">
+              <h3>3. Receive</h3>
+              <p class="muted">Instant delivery in-game with real-time order tracking.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="card glass">
+            <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); align-items: center;">
+              <div>
+                <h3>Trusted by the Rust community</h3>
+                <p class="muted">Secure payments, instant delivery, and 24/7 support.</p>
+              </div>
+              <div>
+                <p class="muted">Payment Partners</p>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                  <span class="chip">Visa</span>
+                  <span class="chip">Mastercard</span>
+                  <span class="chip">PayPal</span>
+                  <span class="chip">Crypto</span>
+                </div>
+              </div>
+              <div>
+                <p class="muted">Community Rating</p>
+                <strong>4.9/5</strong> from 3,200 reviews
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="logo">
+            <span>⚙</span>
+            <span>{{store.name}}</span>
+          </div>
+          <p class="muted">Premium Rust store for survivors who want the edge.</p>
+        </div>
+        <div>
+          <strong>Store</strong>
+          <div class="grid">
+            <a href="/catalog">Catalog</a>
+            <a href="/support">Support</a>
+            <a href="/account">Account</a>
+          </div>
+        </div>
+        <div>
+          <strong>Community</strong>
+          <div class="grid">
+            <a href="#">Discord</a>
+            <a href="#">Twitter</a>
+            <a href="#">YouTube</a>
+          </div>
+        </div>
+        <div>
+          <strong>Legal</strong>
+          <div class="grid">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Refunds</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <div class="modal" id="modal-cart" data-modal>
+      <div class="modal-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Cart preview</h3>
+          <button class="btn btn-ghost" data-modal-close>Close</button>
+        </div>
+        <div class="grid" data-gs-cart-preview>
+          {{#cart.items}}
+          <div style="display: flex; justify-content: space-between;">
+            <span>{{name}}</span>
+            <span>{{price}}</span>
+          </div>
+          {{/cart.items}}
+        </div>
+        <a class="btn btn-primary" href="/cart" style="width: 100%; margin-top: 1rem;">View cart</a>
+      </div>
+    </div>
+
+    <div class="modal" id="modal-login" data-modal>
+      <div class="modal-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Connect account</h3>
+          <button class="btn btn-ghost" data-modal-close>Close</button>
+        </div>
+        <p class="muted">Sign in to deliver items instantly to your Rust profile.</p>
+        <button class="btn btn-primary" data-gs-action="login" style="width: 100%;">Sign in with Steam</button>
+      </div>
+    </div>
+
+    <script src="/assets/js/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cart | Rust Dominion</title>
+    <meta name="description" content="Review your cart and checkout securely." />
+    <link rel="icon" href="assets/img/favicon.svg" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header-inner">
+        <a class="logo" href="index.html">
+          <span>⚙</span>
+          <span>Rust Dominion</span>
+        </a>
+        <nav class="nav">
+          <a href="catalog.html">Catalog</a>
+          <a href="support.html">Support</a>
+          <a href="account.html">Account</a>
+        </nav>
+        <div class="nav">
+          <a class="cart-pill" href="cart.html">🛒 <span data-cart-count>0</span></a>
+          <a class="btn btn-secondary" href="account.html">Sign In</a>
+        </div>
+        <button class="btn btn-ghost" data-drawer-toggle aria-label="Open menu">☰</button>
+      </div>
+    </header>
+
+    <div class="drawer" data-drawer>
+      <div class="drawer-panel">
+        <nav class="grid">
+          <a href="catalog.html">Catalog</a>
+          <a href="support.html">Support</a>
+          <a href="account.html">Account</a>
+          <a href="cart.html">Cart</a>
+        </nav>
+      </div>
+    </div>
+
+    <main class="section">
+      <div class="container layout-2">
+        <section>
+          <h1>Your cart</h1>
+          <div class="grid" id="cart-items"></div>
+        </section>
+
+        <aside class="card sticky">
+          <h3>Order summary</h3>
+          <div style="display: flex; justify-content: space-between;">
+            <span class="muted">Subtotal</span>
+            <span id="summary-subtotal">$0.00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-weight: 700; margin-top: 0.5rem;">
+            <span>Total</span>
+            <span id="summary-total">$0.00</span>
+          </div>
+          <div style="margin-top: 1rem;">
+            <label for="coupon">Coupon</label>
+            <input id="coupon" type="text" placeholder="Enter code" />
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 0.6rem;">Apply</button>
+          </div>
+          <a class="btn btn-primary" href="checkout.html" style="width: 100%; margin-top: 1rem;">Proceed to checkout</a>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="logo">
+            <span>⚙</span>
+            <span>Rust Dominion</span>
+          </div>
+          <p class="muted">Premium Rust store for survivors who want the edge.</p>
+        </div>
+        <div>
+          <strong>Support</strong>
+          <div class="grid">
+            <a href="support.html">FAQ</a>
+            <a href="#">Contact</a>
+          </div>
+        </div>
+        <div>
+          <strong>Legal</strong>
+          <div class="grid">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Refunds</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/cart.js"></script>
+  </body>
+</html>

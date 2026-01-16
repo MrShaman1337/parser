@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Support | {{store.name}}</title>
+    <meta name="description" content="Support, FAQ, and delivery guidance." />
+    <link rel="stylesheet" href="/assets/css/theme.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header-inner">
+        <a class="logo" href="/home">
+          <span>⚙</span>
+          <span>{{store.name}}</span>
+        </a>
+        <nav class="nav">
+          <a href="/catalog">Catalog</a>
+          <a href="/support">Support</a>
+          <a href="/account">Account</a>
+        </nav>
+        <div class="nav">
+          <button class="cart-pill" data-modal-toggle data-modal-target="#modal-cart">🛒 <span data-gs-cart-count>{{cart.count}}</span></button>
+          <button class="btn btn-secondary" data-gs-action="login" data-modal-toggle data-modal-target="#modal-login">Sign in</button>
+        </div>
+        <button class="btn btn-ghost" data-drawer-toggle aria-label="Open menu">☰</button>
+      </div>
+    </header>
+
+    <div class="drawer" data-drawer>
+      <div class="drawer-panel">
+        <nav class="grid">
+          <a href="/catalog">Catalog</a>
+          <a href="/support">Support</a>
+          <a href="/account">Account</a>
+          <a href="/cart">Cart</a>
+        </nav>
+      </div>
+    </div>
+
+    <main class="section">
+      <div class="container layout-2">
+        <section>
+          <h1>Support & FAQ</h1>
+          <div class="card">
+            <div class="accordion-item" data-accordion-item>
+              <button type="button">When will I receive my items?</button>
+              <div class="accordion-content">Most items are delivered instantly. If a server is offline, delivery will resume automatically.</div>
+            </div>
+            <div class="accordion-item" data-accordion-item>
+              <button type="button">How do I connect my Steam account?</button>
+              <div class="accordion-content">Use the Sign in with Steam button to link your profile and enable delivery.</div>
+            </div>
+            <div class="accordion-item" data-accordion-item>
+              <button type="button">Refund policy</button>
+              <div class="accordion-content">Refunds are available for unused digital items within 24 hours. See the refund policy for details.</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 2rem;">
+            <h3>Delivery issues?</h3>
+            <p class="muted">If you did not receive an item within 15 minutes, check your inventory and reconnect. Then contact support with your order ID.</p>
+          </div>
+        </section>
+
+        <aside class="card sticky">
+          <h3>Contact support</h3>
+          <form data-gs-support-form>
+            <label for="name">Name</label>
+            <input id="name" type="text" required data-gs-support-name />
+            <label for="email">Email</label>
+            <input id="email" type="email" required data-gs-support-email />
+            <label for="order">Order ID</label>
+            <input id="order" type="text" data-gs-support-order />
+            <label for="message">Message</label>
+            <textarea id="message" rows="4" required data-gs-support-message></textarea>
+            <button class="btn btn-primary" type="submit">Send message</button>
+          </form>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="logo">
+            <span>⚙</span>
+            <span>{{store.name}}</span>
+          </div>
+          <p class="muted">Premium Rust store for survivors who want the edge.</p>
+        </div>
+        <div>
+          <strong>Support</strong>
+          <div class="grid">
+            <a href="/support">FAQ</a>
+            <a href="#">Contact</a>
+          </div>
+        </div>
+        <div>
+          <strong>Legal</strong>
+          <div class="grid">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Refunds</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <div class="modal" id="modal-cart" data-modal>
+      <div class="modal-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Cart preview</h3>
+          <button class="btn btn-ghost" data-modal-close>Close</button>
+        </div>
+        <div class="grid" data-gs-cart-preview>
+          {{#cart.items}}
+          <div style="display: flex; justify-content: space-between;">
+            <span>{{name}}</span>
+            <span>{{price}}</span>
+          </div>
+          {{/cart.items}}
+        </div>
+        <a class="btn btn-primary" href="/cart" style="width: 100%; margin-top: 1rem;">View cart</a>
+      </div>
+    </div>
+
+    <div class="modal" id="modal-login" data-modal>
+      <div class="modal-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Connect account</h3>
+          <button class="btn btn-ghost" data-modal-close>Close</button>
+        </div>
+        <p class="muted">Sign in to deliver items instantly to your Rust profile.</p>
+        <button class="btn btn-primary" data-gs-action="login" style="width: 100%;">Sign in with Steam</button>
+      </div>
+    </div>
+
+    <script src="/assets/js/main.js"></script>
+  </body>
+</html>

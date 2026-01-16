@@ -1,0 +1,117 @@
+{
+  "store": {
+    "name": "Rust Dominion",
+    "refund_policy": "Refunds available within 24 hours for unused digital items."
+  },
+  "user": {
+    "name": "StoneWarden",
+    "steam_id": "STEAM_0:1:123456",
+    "avatar": "/assets/img/avatar.jpg"
+  },
+  "cart": {
+    "count": 2,
+    "subtotal": "$42.00",
+    "discount": "$6.00",
+    "total": "$36.00",
+    "items": [
+      {
+        "id": "kit-001",
+        "name": "Wipe Day Kit",
+        "perks": "Gun, tools, med supplies",
+        "price": "$18.00",
+        "image": "/assets/img/kit-001.jpg",
+        "quantity": 1
+      },
+      {
+        "id": "vip-001",
+        "name": "Elite VIP",
+        "perks": "Queue skip, kits, Discord role",
+        "price": "$18.00",
+        "image": "/assets/img/vip-001.jpg",
+        "quantity": 1
+      }
+    ]
+  },
+  "products": {
+    "featured": [
+      {
+        "id": "kit-001",
+        "name": "Wipe Day Kit",
+        "perks": "Gun, tools, med supplies",
+        "price": "$18.00",
+        "price_compare": "$24.00",
+        "discount": 25,
+        "image": "/assets/img/kit-001.jpg",
+        "image_2x": "/assets/img/kit-001@2x.jpg"
+      },
+      {
+        "id": "skin-004",
+        "name": "Industrial Skin Pack",
+        "perks": "5 Rust skins included",
+        "price": "$12.00",
+        "price_compare": "$18.00",
+        "discount": 33,
+        "image": "/assets/img/skin-004.jpg",
+        "image_2x": "/assets/img/skin-004@2x.jpg"
+      },
+      {
+        "id": "vip-001",
+        "name": "Elite VIP",
+        "perks": "Queue skip, kits, alerts",
+        "price": "$24.00",
+        "price_compare": "$32.00",
+        "discount": 25,
+        "image": "/assets/img/vip-001.jpg",
+        "image_2x": "/assets/img/vip-001@2x.jpg"
+      }
+    ],
+    "related": [
+      {
+        "id": "res-002",
+        "name": "Resource Bundle",
+        "price": "$10.00",
+        "image": "/assets/img/res-002.jpg"
+      },
+      {
+        "id": "kit-003",
+        "name": "Raider Kit",
+        "price": "$22.00",
+        "image": "/assets/img/kit-003.jpg"
+      }
+    ]
+  },
+  "category": {
+    "name": "Kits"
+  },
+  "product": {
+    "id": "kit-001",
+    "name": "Wipe Day Kit",
+    "short_description": "Hit the ground running with a full wipe-day loadout.",
+    "description": "Instant access to weapons, tools, meds, and building materials.",
+    "price": "$18.00",
+    "price_compare": "$24.00",
+    "image": "/assets/img/kit-001.jpg",
+    "image_2x": "/assets/img/kit-001@2x.jpg",
+    "gallery": [
+      "/assets/img/kit-001.jpg",
+      "/assets/img/kit-002.jpg",
+      "/assets/img/kit-003.jpg",
+      "/assets/img/kit-004.jpg"
+    ],
+    "items": ["AK-47", "Hazmat Suit", "Med Syringes", "Tool Set"],
+    "requirements": "Steam account linked and Rust profile verified.",
+    "delivery": "Instant in-game delivery",
+    "variants": [
+      { "id": "std", "name": "Standard" },
+      { "id": "deluxe", "name": "Deluxe + Bonus Mats" }
+    ]
+  },
+  "orders": [
+    { "item": "Elite VIP", "date": "Jan 10, 2026", "total": "$24.00" },
+    { "item": "Wipe Day Kit", "date": "Jan 5, 2026", "total": "$18.00" }
+  ],
+  "claims": [
+    { "id": "vip-001", "name": "Elite VIP" },
+    { "id": "kit-001", "name": "Wipe Day Kit" }
+  ]
+}

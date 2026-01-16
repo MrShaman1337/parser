@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rust Dominion | Premium Rust Store</title>
+    <meta name="description" content="Premium Rust kits, skins, and VIP perks. Fast delivery and secure checkout." />
+    <meta property="og:title" content="Rust Dominion | Premium Rust Store" />
+    <meta property="og:description" content="High-converting Rust shop with premium kits, skins, and VIP." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="assets/img/og-cover.svg" />
+    <link rel="icon" href="assets/img/favicon.svg" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header-inner">
+        <a class="logo" href="index.html">
+          <span>⚙</span>
+          <span>Rust Dominion</span>
+        </a>
+        <nav class="nav">
+          <a href="catalog.html">Catalog</a>
+          <a href="support.html">Support</a>
+          <a href="account.html">Account</a>
+        </nav>
+        <div class="search">
+          <span>🔍</span>
+          <input type="search" placeholder="Search items" aria-label="Search items" />
+        </div>
+        <div class="nav">
+          <a class="cart-pill" href="cart.html">🛒 <span data-cart-count>0</span></a>
+          <a class="btn btn-secondary" href="account.html">Sign In</a>
+        </div>
+        <button class="btn btn-ghost" data-drawer-toggle aria-label="Open menu">☰</button>
+      </div>
+    </header>
+
+    <div class="drawer" data-drawer>
+      <div class="drawer-panel">
+        <div class="logo" style="margin-bottom: 2rem;">
+          <span>⚙</span>
+          <span>Rust Dominion</span>
+        </div>
+        <nav class="grid">
+          <a href="catalog.html">Catalog</a>
+          <a href="support.html">Support</a>
+          <a href="account.html">Account</a>
+          <a href="cart.html">Cart</a>
+        </nav>
+        <div style="margin-top: 2rem;">
+          <a class="btn btn-secondary" href="account.html" style="width: 100%;">Connect Account</a>
+        </div>
+      </div>
+    </div>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-grid">
+          <div>
+            <div class="badge">Official Rust Marketplace</div>
+            <h1>Gear up fast. Dominate the wipe.</h1>
+            <p class="muted">Premium Rust kits, skins, and VIP perks delivered instantly. Secure checkout, real-time stock, elite rewards.</p>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+              <a class="btn btn-primary" href="catalog.html">Shop Now</a>
+              <a class="btn btn-secondary" href="account.html">Sign In</a>
+            </div>
+            <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 2rem;">
+              <div>
+                <strong>32,409</strong>
+                <div class="muted">Orders delivered</div>
+              </div>
+              <div>
+                <strong>8,142</strong>
+                <div class="muted">Active players</div>
+              </div>
+              <div>
+                <strong>99.98%</strong>
+                <div class="muted">Server uptime</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Featured Drop</h3>
+            <p class="muted">Limited-time Rust VIP with priority queue, raid alerts, and exclusive skins.</p>
+            <div class="price">$24.00 <del>$32.00</del></div>
+            <a class="btn btn-primary" href="product.html?id=vip-elite">Add VIP</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+            <h2>Featured</h2>
+            <a class="btn btn-ghost" href="catalog.html">View all</a>
+          </div>
+          <div class="product-grid" id="featured-grid">
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <h2>Shop by category</h2>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 1.5rem;">
+            <a class="card" href="catalog.html#kits">Kits</a>
+            <a class="card" href="catalog.html#vip">VIP</a>
+            <a class="card" href="catalog.html#skins">Skins</a>
+            <a class="card" href="catalog.html#currency">Currency</a>
+            <a class="card" href="catalog.html#resources">Resources</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <h2>How it works</h2>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 1.5rem;">
+            <div class="card">
+              <h3>1. Connect</h3>
+              <p class="muted">Sign in with your account and verify your Rust profile.</p>
+            </div>
+            <div class="card">
+              <h3>2. Choose</h3>
+              <p class="muted">Select kits, skins, or VIP perks tailored to your playstyle.</p>
+            </div>
+            <div class="card">
+              <h3>3. Receive</h3>
+              <p class="muted">Instant delivery in-game with real-time order tracking.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="card">
+            <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); align-items: center;">
+              <div>
+                <h3>Trusted by the Rust community</h3>
+                <p class="muted">Secure payments, instant delivery, and 24/7 support.</p>
+              </div>
+              <div>
+                <p class="muted">Payment Partners</p>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                  <span class="chip">Visa</span>
+                  <span class="chip">Mastercard</span>
+                  <span class="chip">PayPal</span>
+                  <span class="chip">Crypto</span>
+                </div>
+              </div>
+              <div>
+                <p class="muted">Community Rating</p>
+                <strong>4.9/5</strong> from 3,200 reviews
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="logo">
+            <span>⚙</span>
+            <span>Rust Dominion</span>
+          </div>
+          <p class="muted">Premium Rust store for survivors who want the edge.</p>
+        </div>
+        <div>
+          <strong>Store</strong>
+          <div class="grid">
+            <a href="catalog.html">Catalog</a>
+            <a href="support.html">Support</a>
+            <a href="account.html">Account</a>
+          </div>
+        </div>
+        <div>
+          <strong>Community</strong>
+          <div class="grid">
+            <a href="#">Discord</a>
+            <a href="#">Twitter</a>
+            <a href="#">YouTube</a>
+          </div>
+        </div>
+        <div>
+          <strong>Legal</strong>
+          <div class="grid">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Refunds</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const grid = document.getElementById("featured-grid");
+        try {
+          const products = await window.RustShop.fetchProducts();
+          const activeProducts = products.filter((p) => p.is_active !== false);
+          const featured = activeProducts
+            .filter((p) => p.is_featured)
+            .sort((a, b) => (a.featured_order || 0) - (b.featured_order || 0));
+          const featuredList = featured.length ? featured : activeProducts.slice(0, 3);
+          grid.innerHTML = "";
+          featuredList.forEach((product) => {
+            const card = document.createElement("article");
+            card.className = "product-card";
+            card.innerHTML = `
+              <div style="position: relative;">
+                <img src="${product.image}" alt="${product.name || product.title}" loading="lazy" />
+                ${product.discount ? `<span class="badge discount">-${product.discount}%</span>` : ""}
+              </div>
+              <div>
+                <h3>${product.name || product.title}</h3>
+                <p class="muted">${product.perks || product.short_description || ""}</p>
+              </div>
+              <div class="price">${product.priceFormatted} ${product.compareAt ? `<del>${product.compareAt}</del>` : ""}</div>
+              <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+                <a class="btn btn-secondary" href="product.html?id=${product.id}">View</a>
+                <button class="btn btn-primary" data-add="${product.id}">Add to cart</button>
+              </div>
+            `;
+            grid.appendChild(card);
+          });
+          grid.addEventListener("click", (e) => {
+            const btn = e.target.closest("[data-add]");
+            if (!btn) return;
+            const product = featuredList.find((p) => p.id === btn.dataset.add);
+            if (product) window.RustShop.addToCart(product, 1);
+          });
+        } catch (err) {
+          grid.innerHTML = '<div class="card">Failed to load featured items.</div>';
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checkout | Rust Dominion</title>
+    <meta name="description" content="Secure checkout for Rust shop purchases." />
+    <link rel="icon" href="assets/img/favicon.svg" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header-inner">
+        <a class="logo" href="index.html">
+          <span>⚙</span>
+          <span>Rust Dominion</span>
+        </a>
+        <nav class="nav">
+          <a href="catalog.html">Catalog</a>
+          <a href="support.html">Support</a>
+          <a href="account.html">Account</a>
+        </nav>
+        <div class="nav">
+          <a class="cart-pill" href="cart.html">🛒 <span data-cart-count>0</span></a>
+          <a class="btn btn-secondary" href="account.html">Sign In</a>
+        </div>
+        <button class="btn btn-ghost" data-drawer-toggle aria-label="Open menu">☰</button>
+      </div>
+    </header>
+
+    <div class="drawer" data-drawer>
+      <div class="drawer-panel">
+        <nav class="grid">
+          <a href="catalog.html">Catalog</a>
+          <a href="support.html">Support</a>
+          <a href="account.html">Account</a>
+          <a href="cart.html">Cart</a>
+        </nav>
+      </div>
+    </div>
+
+    <main class="section">
+      <div class="container layout-2">
+        <section>
+          <h1>Checkout</h1>
+          <form id="checkout-form" class="card">
+            <label for="email">Email</label>
+            <input id="email" type="email" required />
+            <label for="nickname">Nickname / SteamID</label>
+            <input id="nickname" type="text" placeholder="Optional" />
+            <label for="server">Server</label>
+            <input id="server" type="text" required placeholder="EU Main #1" />
+            <label for="note">Order note</label>
+            <textarea id="note" rows="3" placeholder="Optional"></textarea>
+            <div style="margin-top: 1rem;">
+              <h3>Payment method</h3>
+              <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));">
+                <label><input type="radio" name="payment" required /> Visa</label>
+                <label><input type="radio" name="payment" /> Mastercard</label>
+                <label><input type="radio" name="payment" /> PayPal</label>
+                <label><input type="radio" name="payment" /> Crypto</label>
+              </div>
+            </div>
+            <button class="btn btn-primary" type="submit" style="margin-top: 1.5rem;">Place order</button>
+          </form>
+        </section>
+
+        <aside class="card sticky">
+          <h3>Order summary</h3>
+          <p class="muted">Review your cart before placing the order.</p>
+          <a class="btn btn-secondary" href="cart.html" style="width: 100%;">Back to cart</a>
+        </aside>
+      </div>
+    </main>
+
+    <div class="modal" id="checkout-success" data-modal>
+      <div class="modal-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Order confirmed</h3>
+          <button class="btn btn-ghost" data-modal-close>Close</button>
+        </div>
+        <p class="muted">Thanks for your order. Items will be delivered shortly.</p>
+        <p>Order ID: <strong id="order-id"></strong></p>
+        <a class="btn btn-primary" href="index.html">Return home</a>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="logo">
+            <span>⚙</span>
+            <span>Rust Dominion</span>
+          </div>
+          <p class="muted">Premium Rust store for survivors who want the edge.</p>
+        </div>
+        <div>
+          <strong>Support</strong>
+          <div class="grid">
+            <a href="support.html">FAQ</a>
+            <a href="#">Contact</a>
+          </div>
+        </div>
+        <div>
+          <strong>Legal</strong>
+          <div class="grid">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Refunds</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/checkout.js"></script>
+  </body>
+</html>

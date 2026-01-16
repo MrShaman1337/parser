@@ -1,0 +1,13 @@
+RewriteEngine On
+
+# Allow existing files and directories
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Do not rewrite API endpoints
+RewriteRule ^api/ - [L]
+RewriteRule ^admin/api/ - [L]
+
+# SPA fallback
+RewriteRule ^ index.html [L]

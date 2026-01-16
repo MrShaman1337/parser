@@ -1,0 +1,21 @@
+{
+  "name": "Rust Premium Storefront",
+  "version": "1.0.0",
+  "notes": "Update these values to customize the theme. Values map to CSS variables in assets/css/theme.css.",
+  "theme": {
+    "colors": {
+      "bg": "#0c0f14",
+      "panel": "#121824",
+      "text": "#e6edf3",
+      "muted": "#9aa6b2",
+      "accent": "#ff6a00",
+      "accent2": "#4cc2ff",
+      "border": "#243043",
+      "glow": "rgba(255, 106, 0, 0.35)"
+    },
+    "radius": "16px",
+    "spacing": "1rem",
+    "fontFamily": "Inter, system-ui, -apple-system, Segoe UI, sans-serif",
+    "glowIntensity": "0.6"
+  }
+}

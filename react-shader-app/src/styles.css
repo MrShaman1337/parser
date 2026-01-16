@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: #0b0e13;
+  color: #e9eef5;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+.gradient-fallback {
+  background: radial-gradient(1200px 600px at 20% 0%, rgba(76, 194, 255, 0.15), transparent 60%),
+    radial-gradient(900px 500px at 80% 0%, rgba(255, 106, 0, 0.15), transparent 60%),
+    #0b0e13;
+}

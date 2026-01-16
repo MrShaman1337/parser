@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{product.name}} | {{store.name}}</title>
+    <meta name="description" content="{{product.short_description}}" />
+    <meta property="og:title" content="{{product.name}} | {{store.name}}" />
+    <meta property="og:description" content="{{product.short_description}}" />
+    <meta property="og:type" content="product" />
+    <link rel="stylesheet" href="/assets/css/theme.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header-inner">
+        <a class="logo" href="/home">
+          <span>⚙</span>
+          <span>{{store.name}}</span>
+        </a>
+        <nav class="nav">
+          <a href="/catalog">Catalog</a>
+          <a href="/support">Support</a>
+          <a href="/account">Account</a>
+        </nav>
+        <div class="search">
+          <span>🔍</span>
+          <input type="search" placeholder="Search items" data-gs-search />
+        </div>
+        <div class="nav">
+          <button class="cart-pill" data-modal-toggle data-modal-target="#modal-cart">🛒 <span data-gs-cart-count>{{cart.count}}</span></button>
+          <button class="btn btn-secondary" data-gs-action="login" data-modal-toggle data-modal-target="#modal-login">Sign in</button>
+        </div>
+        <button class="btn btn-ghost" data-drawer-toggle aria-label="Open menu">☰</button>
+      </div>
+    </header>
+
+    <div class="drawer" data-drawer>
+      <div class="drawer-panel">
+        <nav class="grid">
+          <a href="/catalog">Catalog</a>
+          <a href="/support">Support</a>
+          <a href="/account">Account</a>
+          <a href="/cart">Cart</a>
+        </nav>
+      </div>
+    </div>
+
+    <main class="section">
+      <div class="container">
+        <div class="breadcrumb">
+          <a href="/home">Home</a>
+          <span>›</span>
+          <a href="/catalog">{{category.name}}</a>
+          <span>›</span>
+          <span>{{product.name}}</span>
+        </div>
+        <div class="layout-2">
+          <section>
+            <div class="card">
+              <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                <div>
+                  <img src="{{product.image}}" alt="{{product.name}}" srcset="{{product.image}} 1x, {{product.image_2x}} 2x" sizes="(max-width: 900px) 100vw, 520px" data-gs-product-image data-gs-product-srcset />
+                  <div class="grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 0.8rem;" data-gs-gallery>
+                    {{#product.gallery}}
+                    <img src="{{.}}" alt="{{product.name}} thumbnail" loading="lazy" />
+                    {{/product.gallery}}
+                  </div>
+                </div>
+                <div class="grid">
+                  <h1 data-gs-product-title>{{product.name}}</h1>
+                  <p class="muted" data-gs-product-description>{{product.description}}</p>
+                  <div>
+                    <span class="badge">Sale</span>
+                    <span class="price" data-gs-product-price>{{product.price}}</span>
+                    <del>{{product.price_compare}}</del>
+                  </div>
+                  <div>
+                    <label for="variant">Select variant</label>
+                    <select id="variant" data-gs-variant>
+                      {{#product.variants}}
+                      <option value="{{id}}">{{name}}</option>
+                      {{/product.variants}}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid" style="margin-top: 2rem;">
+              <div class="card">
+                <h3>What you get</h3>
+                <ul data-gs-product-items>
+                  {{#product.items}}
+                  <li>{{.}}</li>
+                  {{/product.items}}
+                </ul>
+              </div>
+              <div class="card">
+                <h3>Requirements</h3>
+                <p class="muted" data-gs-product-requirements>{{product.requirements}}</p>
+                <h3>Delivery</h3>
+                <p class="muted" data-gs-product-delivery>{{product.delivery}}</p>
+                <h3>Refunds</h3>
+                <p class="muted">{{store.refund_policy}}</p>
+              </div>
+            </div>
+          </section>
+
+          <aside class="card sticky">
+            <h3>Buy now</h3>
+            <p class="muted">Instant delivery to {{user.name}}</p>
+            <div class="price" data-gs-product-price>{{product.price}}</div>
+            <button class="btn btn-primary" data-gs-action="add-to-cart" data-gs-product-id="{{product.id}}">Add to cart</button>
+            <button class="btn btn-secondary" style="margin-top: 0.5rem;" data-gs-action="checkout">Buy now</button>
+            <div style="margin-top: 1rem;">
+              <p class="muted">Delivery method</p>
+              <span class="chip">{{product.delivery}}</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <section class="section">
+      <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2>Related items</h2>
+          <a class="btn btn-ghost" href="/catalog">View all</a>
+        </div>
+        <div class="carousel" data-gs-related data-gs-carousel>
+          {{#products.related}}
+          <article class="product-card">
+            <img src="{{image}}" alt="{{name}}" loading="lazy" />
+            <h3>{{name}}</h3>
+            <div class="price">{{price}}</div>
+            <button class="btn btn-secondary" data-gs-action="add-to-cart" data-gs-product-id="{{id}}">Add to cart</button>
+          </article>
+          {{/products.related}}
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="logo">
+            <span>⚙</span>
+            <span>{{store.name}}</span>
+          </div>
+          <p class="muted">Premium Rust store for survivors who want the edge.</p>
+        </div>
+        <div>
+          <strong>Store</strong>
+          <div class="grid">
+            <a href="/catalog">Catalog</a>
+            <a href="/support">Support</a>
+            <a href="/account">Account</a>
+          </div>
+        </div>
+        <div>
+          <strong>Legal</strong>
+          <div class="grid">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Refunds</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <div class="modal" id="modal-cart" data-modal>
+      <div class="modal-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Cart preview</h3>
+          <button class="btn btn-ghost" data-modal-close>Close</button>
+        </div>
+        <div class="grid" data-gs-cart-preview>
+          {{#cart.items}}
+          <div style="display: flex; justify-content: space-between;">
+            <span>{{name}}</span>
+            <span>{{price}}</span>
+          </div>
+          {{/cart.items}}
+        </div>
+        <a class="btn btn-primary" href="/cart" style="width: 100%; margin-top: 1rem;">View cart</a>
+      </div>
+    </div>
+
+    <div class="modal" id="modal-login" data-modal>
+      <div class="modal-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Connect account</h3>
+          <button class="btn btn-ghost" data-modal-close>Close</button>
+        </div>
+        <p class="muted">Sign in to deliver items instantly to your Rust profile.</p>
+        <button class="btn btn-primary" data-gs-action="login" style="width: 100%;">Sign in with Steam</button>
+      </div>
+    </div>
+
+    <script src="/assets/js/main.js"></script>
+  </body>
+</html>
