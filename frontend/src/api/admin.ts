@@ -1,7 +1,8 @@
 import { apiFetch } from "./client";
 import { Product } from "../types";
 
-export const adminSession = () => apiFetch<{ ok: boolean; csrf_token: string; featured_limit: number }>(`/admin/api/session.php`);
+export const adminSession = () =>
+  apiFetch<{ ok: boolean; csrf_token: string; featured_limit: number; role: string; user: string }>(`/admin/api/session.php`);
 export const adminLogin = (username: string, password: string, csrfToken: string) =>
   apiFetch(`/admin/api/login.php`, { method: "POST", body: { username, password, csrf_token: csrfToken } });
 export const adminLogout = () => apiFetch(`/admin/api/logout.php`);
@@ -13,6 +14,11 @@ export const adminDeleteProduct = (id: string, csrfToken: string) =>
   apiFetch(`/admin/api/product-delete.php`, { method: "POST", body: { id, csrf_token: csrfToken } });
 export const adminSaveFeatured = (featured: string[], csrfToken: string) =>
   apiFetch(`/admin/api/featured-save.php`, { method: "POST", body: { featured, csrf_token: csrfToken } });
+
+export const adminFeaturedDrop = () =>
+  apiFetch<{ featured_drop: any }>(`/admin/api/featured-drop.php`);
+export const adminSaveFeaturedDrop = (payload: Record<string, unknown>) =>
+  apiFetch<{ ok: boolean; featured_drop: any }>(`/admin/api/featured-drop.php`, { method: "POST", body: payload });
 
 export const adminOrders = (query = "", status = "", sort = "date") =>
   apiFetch<{ orders: any[] }>(`/admin/api/orders.php?q=${encodeURIComponent(query)}&status=${encodeURIComponent(status)}&sort=${sort}`);

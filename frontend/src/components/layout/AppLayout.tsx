@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import AnoAI from "../ui/animated-shader-background";
 import Header from "../shared/Header";
-import Footer from "../shared/Footer";
+import HoverFooter from "../HoverFooter";
 
 const AppLayout: React.FC<{ enableShader?: boolean }> = ({ enableShader = true }) => {
   const location = useLocation();
@@ -12,7 +12,7 @@ const AppLayout: React.FC<{ enableShader?: boolean }> = ({ enableShader = true }
       {enableShader && !isAdmin && <AnoAI />}
       <Header />
       <Outlet />
-      <Footer />
+      <HoverFooter />
     </div>
   );
 };

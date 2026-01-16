@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchProducts } from "../api/products";
-import { Product } from "../types";
+import { FeaturedDrop, Product } from "../types";
 import { useCart } from "../context/CartContext";
+import { fetchFeaturedDrop, fetchStats } from "../api/site";
 
 const Home = () => {
   const [featured, setFeatured] = useState<Product[]>([]);
   const { addItem } = useCart();
+  const [stats, setStats] = useState({ orders_delivered: 214, active_players: 23 });
+  const [featuredDrop, setFeaturedDrop] = useState<FeaturedDrop | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -18,6 +21,10 @@ const Home = () => {
       setFeatured(featuredList.length ? featuredList : active.slice(0, 3));
     };
     load().catch(() => setFeatured([]));
+    fetchStats().then(setStats).catch(() => setStats({ orders_delivered: 214, active_players: 23 }));
+    fetchFeaturedDrop()
+      .then((data) => setFeaturedDrop(data.featured_drop))
+      .catch(() => setFeaturedDrop(null));
   }, []);
 
   return (
@@ -40,11 +47,11 @@ const Home = () => {
             </div>
             <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", marginTop: "2rem" }}>
               <div>
-                <strong>32,409</strong>
+                <strong>{stats.orders_delivered}</strong>
                 <div className="muted">Orders delivered</div>
               </div>
               <div>
-                <strong>8,142</strong>
+                <strong>{stats.active_players}</strong>
                 <div className="muted">Active players</div>
               </div>
               <div>
@@ -53,14 +60,25 @@ const Home = () => {
               </div>
             </div>
           </div>
-          <div className="card">
-            <h3>Featured Drop</h3>
-            <p className="muted">Limited-time Rust VIP with priority queue, raid alerts, and exclusive skins.</p>
-            <div className="price">$24.00 <del>$32.00</del></div>
-            <Link className="btn btn-primary" to="/product/vip-elite">
-              Add VIP
-            </Link>
-          </div>
+          {featuredDrop ? (
+            <div className="card">
+              <h3>{featuredDrop.title}</h3>
+              {featuredDrop.subtitle ? <p className="muted">{featuredDrop.subtitle}</p> : null}
+              <div className="price">
+                ${featuredDrop.price.toFixed(2)}{" "}
+                {featuredDrop.old_price ? <del>${featuredDrop.old_price.toFixed(2)}</del> : null}
+              </div>
+              {featuredDrop.product ? (
+                <button className="btn btn-primary" onClick={() => addItem(featuredDrop.product as Product, 1)}>
+                  {featuredDrop.cta_text}
+                </button>
+              ) : (
+                <Link className="btn btn-primary" to={`/product/${featuredDrop.product_id}`}>
+                  {featuredDrop.cta_text}
+                </Link>
+              )}
+            </div>
+          ) : null}
         </div>
       </section>
 

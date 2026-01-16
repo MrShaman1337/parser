@@ -43,3 +43,22 @@ export type Order = {
   total: number | string;
   currency?: string;
 };
+
+export type User = {
+  id: number;
+  steam_id: string;
+  nickname: string;
+  avatar?: string;
+  profile_url?: string;
+};
+
+export type FeaturedDrop = {
+  product_id: string;
+  title: string;
+  subtitle?: string;
+  cta_text: string;
+  old_price?: number | null;
+  price: number;
+  is_enabled: boolean;
+  product?: Product;
+};

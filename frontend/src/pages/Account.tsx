@@ -1,62 +1,69 @@
+import { useUserSession } from "../context/UserSessionContext";
+
 const Account = () => {
+  const { authenticated, user, loading, logout } = useUserSession();
+
+  if (loading) {
+    return (
+      <main className="section">
+        <div className="container">
+          <div className="card">Loading account...</div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="section">
       <div className="container layout-2">
         <section>
           <h1>Account</h1>
-          <div className="card" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-            <img src="/assets/img/avatar.svg" alt="User avatar" width={80} style={{ borderRadius: "50%" }} />
-            <div>
-              <h3>StoneWarden</h3>
-              <p className="muted">Steam ID: STEAM_0:1:123456</p>
-              <button className="btn btn-secondary">Sign out</button>
+          {authenticated && user ? (
+            <div className="card" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+              <img src={user.avatar || "/assets/img/avatar.svg"} alt="User avatar" width={80} style={{ borderRadius: "50%" }} />
+              <div>
+                <h3>{user.nickname}</h3>
+                <p className="muted">Steam ID: {user.steam_id}</p>
+                {user.profile_url ? (
+                  <p>
+                    <a className="btn btn-ghost" href={user.profile_url} target="_blank" rel="noreferrer">
+                      Open Steam profile
+                    </a>
+                  </p>
+                ) : null}
+                <button className="btn btn-secondary" onClick={logout}>
+                  Sign out
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="card">
+              <h3>Sign in with Steam</h3>
+              <p className="muted">Use your Steam account to access your orders and perks.</p>
+              <a className="btn btn-primary" href="/api/auth/steam-login.php">
+                Sign in with Steam
+              </a>
+            </div>
+          )}
 
           <div className="card" style={{ marginTop: "2rem" }}>
             <h3>Purchase history</h3>
-            <div className="grid">
-              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", padding: "0.8rem 0" }}>
-                <div>
-                  <strong>Elite VIP</strong>
-                  <div className="muted">Jan 10, 2026</div>
-                </div>
-                <div>$24.00</div>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", padding: "0.8rem 0" }}>
-                <div>
-                  <strong>Wipe Day Kit</strong>
-                  <div className="muted">Jan 5, 2026</div>
-                </div>
-                <div>$18.00</div>
-              </div>
-            </div>
+            <div className="muted">Order history will appear here after your first purchase.</div>
           </div>
         </section>
 
         <aside className="card sticky">
-          <h3>Login</h3>
-          <form>
-            <label htmlFor="login-email">Email</label>
-            <input id="login-email" type="email" required />
-            <label htmlFor="login-password">Password</label>
-            <input id="login-password" type="password" required />
-            <button className="btn btn-primary" type="submit" style={{ marginTop: "1rem" }}>
-              Sign in
+          <h3>Steam account</h3>
+          <p className="muted">We only support Steam sign-in for player accounts.</p>
+          {authenticated ? (
+            <button className="btn btn-secondary" onClick={logout} style={{ marginTop: "1rem" }}>
+              Sign out
             </button>
-          </form>
-          <div style={{ marginTop: "1.5rem" }}>
-            <h3>Register</h3>
-            <form>
-              <label htmlFor="reg-email">Email</label>
-              <input id="reg-email" type="email" required />
-              <label htmlFor="reg-password">Password</label>
-              <input id="reg-password" type="password" required />
-              <button className="btn btn-secondary" type="submit" style={{ marginTop: "1rem" }}>
-                Create account
-              </button>
-            </form>
-          </div>
+          ) : (
+            <a className="btn btn-primary" href="/api/auth/steam-login.php" style={{ marginTop: "1rem", display: "inline-block" }}>
+              Sign in with Steam
+            </a>
+          )}
         </aside>
       </div>
     </main>

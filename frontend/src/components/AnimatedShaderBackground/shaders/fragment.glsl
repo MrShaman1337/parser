@@ -6,6 +6,9 @@ uniform vec2 u_mouse;
 uniform float u_intensity;
 uniform vec3 u_colorA;
 uniform vec3 u_colorB;
+uniform float u_octaves;
+uniform float u_glow;
+uniform float u_mouseStrength;
 
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -27,6 +30,9 @@ float fbm(vec2 p) {
   float v = 0.0;
   float a = 0.5;
   for (int i = 0; i < 4; i++) {
+    if (float(i) >= u_octaves) {
+      break;
+    }
     v += a * noise(p);
     p *= 2.1;
     a *= 0.5;
@@ -40,15 +46,15 @@ void main() {
 
   float t = u_time * 0.05;
   float n = fbm(uv * 2.5 + t);
-  float glow = smoothstep(0.2, 0.95, n) * 1.2;
+  float glow = smoothstep(0.2, 0.95, n) * 1.2 * u_glow;
 
   vec3 base = mix(u_colorA, u_colorB, st.y + n * 0.2);
   vec3 accent = vec3(0.6, 0.9, 1.2) * glow;
 
   float mouseInfluence = length(uv - (u_mouse / u_resolution - 0.5) * 2.0);
-  float pulse = smoothstep(0.6, 0.0, mouseInfluence);
+  float pulse = smoothstep(0.6, 0.0, mouseInfluence) * u_mouseStrength;
 
-  vec3 color = base + accent * u_intensity + pulse * 0.15;
+  vec3 color = base + accent * u_intensity + pulse;
   color = pow(color, vec3(1.1));
   gl_FragColor = vec4(color, 1.0);
 }

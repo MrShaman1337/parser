@@ -33,7 +33,7 @@ const AdminLogin = () => {
           <div className="card">
             <div className="logo">
               <span>⚙</span>
-              <span>Rust Dominion Admin</span>
+              <span>Go Rust Admin</span>
             </div>
             <p className="muted">Sign in to manage products and featured items.</p>
             <form className="grid" onSubmit={handleSubmit}>

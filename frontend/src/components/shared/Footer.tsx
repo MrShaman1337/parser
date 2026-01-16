@@ -7,7 +7,7 @@ const Footer = () => {
         <div>
           <div className="logo">
             <span>⚙</span>
-            <span>Rust Dominion</span>
+            <span>Go Rust</span>
           </div>
           <p className="muted">Premium Rust store for survivors who want the edge.</p>
         </div>
@@ -22,9 +22,9 @@ const Footer = () => {
         <div>
           <strong>Community</strong>
           <div className="grid">
-            <a href="#">Discord</a>
-            <a href="#">Twitter</a>
-            <a href="#">YouTube</a>
+            <a href="https://discord.gg/ATnZzTpR" target="_blank" rel="noreferrer">
+              Discord
+            </a>
           </div>
         </div>
         <div>

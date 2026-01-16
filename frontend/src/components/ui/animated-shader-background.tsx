@@ -8,9 +8,15 @@ const AnoAI = () => {
     const container = containerRef.current;
     if (!container) return;
 
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const maxDpr = isMobile ? 1.25 : 1.75;
+    const fpsCap = isMobile ? 30 : 60;
+    let paused = document.hidden;
+
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 
@@ -91,22 +97,33 @@ const AnoAI = () => {
     scene.add(mesh);
 
     let frameId = 0;
+    let lastFrame = performance.now();
     const animate = () => {
-      material.uniforms.iTime.value += 0.016;
-      renderer.render(scene, camera);
+      const now = performance.now();
+      if (!paused && now - lastFrame >= 1000 / fpsCap) {
+        material.uniforms.iTime.value += 0.016;
+        renderer.render(scene, camera);
+        lastFrame = now;
+      }
       frameId = requestAnimationFrame(animate);
     };
     animate();
 
     const handleResize = () => {
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
       renderer.setSize(window.innerWidth, window.innerHeight);
       material.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight);
     };
+    const handleVisibility = () => {
+      paused = document.hidden;
+    };
     window.addEventListener("resize", handleResize);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", handleVisibility);
       container.removeChild(renderer.domElement);
       geometry.dispose();
       material.dispose();

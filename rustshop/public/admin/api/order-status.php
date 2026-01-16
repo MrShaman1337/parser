@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . "/../../../server/helpers.php";
+require_once dirname(__DIR__, 3) . "/server/helpers.php";
 
 require_login(true);
+require_admin_role(["admin", "superadmin"]);
 rate_limit("order_status", 20, 60);
 validate_csrf(read_input()["csrf_token"] ?? null);
 init_db();

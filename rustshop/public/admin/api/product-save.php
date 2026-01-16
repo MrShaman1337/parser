@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . "/../../../server/helpers.php";
+require_once dirname(__DIR__, 3) . "/server/helpers.php";
 
 require_login(true);
+require_admin_role(["admin", "superadmin"]);
 rate_limit("product_save", 20, 60);
 
 $data = read_input();

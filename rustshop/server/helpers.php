@@ -10,6 +10,16 @@ function config(): array
     return $config;
 }
 
+function env_config(): array
+{
+    static $env;
+    if ($env === null) {
+        $path = __DIR__ . "/env.php";
+        $env = file_exists($path) ? (require $path) : [];
+    }
+    return is_array($env) ? $env : [];
+}
+
 function start_session(): void
 {
     if (session_status() === PHP_SESSION_NONE) {
@@ -23,10 +33,29 @@ function start_session(): void
     }
 }
 
+function destroy_session(): void
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        return;
+    }
+    $_SESSION = [];
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), "", time() - 42000, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
+    }
+    session_destroy();
+}
+
 function json_response($data, int $status = 200): void
 {
     http_response_code($status);
     header("Content-Type: application/json; charset=utf-8");
+    if (is_array($data) && isset($data["error"]) && !array_key_exists("ok", $data)) {
+        $data = ["ok" => false] + $data;
+    }
+    if (is_array($data) && isset($data["error"]) && $status >= 500) {
+        error_log("api_error: " . $data["error"]);
+    }
     echo json_encode($data, JSON_PRETTY_PRINT);
     exit;
 }
@@ -34,12 +63,21 @@ function json_response($data, int $status = 200): void
 function require_login(bool $api = true): void
 {
     start_session();
-    if (empty($_SESSION["admin_logged_in"])) {
+    if (empty($_SESSION["admin_id"])) {
         if ($api) {
             json_response(["error" => "Unauthorized"], 401);
         }
         header("Location: /admin/login.html");
         exit;
+    }
+}
+
+function require_admin_role(array $roles): void
+{
+    require_login(true);
+    $role = $_SESSION["admin_role"] ?? "";
+    if (!in_array($role, $roles, true)) {
+        json_response(["error" => "Forbidden"], 403);
     }
 }
 
@@ -101,6 +139,23 @@ function data_path(): string
     return realpath(__DIR__ . "/../public/data") ?: (__DIR__ . "/../public/data");
 }
 
+function ensure_data_dir(): string
+{
+    $dir = realpath(__DIR__ . "/data") ?: (__DIR__ . "/data");
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    @chmod($dir, 0755);
+    return $dir;
+}
+
+function ensure_file_permissions(string $path): void
+{
+    if (file_exists($path)) {
+        @chmod($path, 0664);
+    }
+}
+
 function products_path(): string
 {
     return data_path() . "/products.json";
@@ -108,19 +163,95 @@ function products_path(): string
 
 function db_path(): string
 {
-    $dir = realpath(__DIR__ . "/data") ?: (__DIR__ . "/data");
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
+    $dir = ensure_data_dir();
+    $path = $dir . "/store.sqlite";
+    if (!file_exists($path)) {
+        @touch($path);
     }
-    return $dir . "/store.sqlite";
+    ensure_file_permissions($path);
+    return $path;
+}
+
+function auth_db_path(): string
+{
+    $dir = ensure_data_dir();
+    $path = $dir . "/auth.sqlite";
+    if (!file_exists($path)) {
+        @touch($path);
+    }
+    ensure_file_permissions($path);
+    return $path;
+}
+
+function auth_db(): PDO
+{
+    static $pdo;
+    if (!$pdo) {
+        $pdo = new PDO("sqlite:" . auth_db_path());
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec("PRAGMA journal_mode = WAL;");
+        $pdo->exec("PRAGMA foreign_keys = ON;");
+    }
+    return $pdo;
+}
+
+function init_auth_db(): void
+{
+    $pdo = auth_db();
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            steam_id TEXT UNIQUE NOT NULL,
+            steam_nickname TEXT NOT NULL,
+            steam_avatar TEXT,
+            steam_profile_url TEXT,
+            created_at TEXT,
+            last_login_at TEXT,
+            is_banned INTEGER DEFAULT 0
+        );
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL,
+            created_at TEXT,
+            last_login_at TEXT,
+            is_active INTEGER DEFAULT 1
+        );
+    ");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS users_last_login_idx ON users(last_login_at);");
+}
+
+function base_url(): string
+{
+    $https = (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off");
+    $scheme = $https ? "https" : "http";
+    $host = $_SERVER["HTTP_HOST"] ?? "localhost";
+    return $scheme . "://" . $host;
+}
+
+function steam_api_key(): string
+{
+    $env = env_config();
+    return trim((string)($env["steam_api_key"] ?? ""));
+}
+
+function steam_openid_endpoint(): string
+{
+    return "https://steamcommunity.com/openid/login";
 }
 
 function db(): PDO
 {
-    $pdo = new PDO("sqlite:" . db_path());
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->exec("PRAGMA journal_mode = WAL;");
-    $pdo->exec("PRAGMA foreign_keys = ON;");
+    static $pdo;
+    if (!$pdo) {
+        $pdo = new PDO("sqlite:" . db_path());
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec("PRAGMA journal_mode = WAL;");
+        $pdo->exec("PRAGMA foreign_keys = ON;");
+    }
     return $pdo;
 }
 
@@ -143,6 +274,333 @@ function init_db(): void
             user_agent TEXT
         );
     ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS site_stats (
+            key TEXT PRIMARY KEY,
+            value INTEGER NOT NULL
+        );
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS featured_drop (
+            id INTEGER PRIMARY KEY,
+            product_id TEXT,
+            title TEXT,
+            subtitle TEXT,
+            cta_text TEXT,
+            old_price REAL,
+            price REAL NOT NULL DEFAULT 0,
+            is_enabled INTEGER DEFAULT 1,
+            updated_at TEXT
+        );
+    ");
+
+    $pdo->exec("CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS orders_created_idx ON orders(created_at);");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS orders_email_idx ON orders(customer_email);");
+
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare("INSERT OR IGNORE INTO site_stats (key, value) VALUES (:key, :value)");
+    $stmt->execute(["key" => "orders_delivered", "value" => 214]);
+    $stmt->execute(["key" => "active_players", "value" => 23]);
+    $stmt = $pdo->prepare("INSERT OR IGNORE INTO featured_drop (id, cta_text, is_enabled, updated_at) VALUES (1, 'Add VIP', 0, :updated_at)");
+    $stmt->execute(["updated_at" => date("c")]);
+    $pdo->commit();
+}
+
+function get_site_stat(string $key, int $default = 0): int
+{
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT value FROM site_stats WHERE key = :key LIMIT 1");
+    $stmt->execute(["key" => $key]);
+    $value = $stmt->fetchColumn();
+    return $value !== false ? intval($value) : $default;
+}
+
+function increment_site_stat(string $key, int $amount = 1): void
+{
+    $pdo = db();
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare("UPDATE site_stats SET value = value + :amount WHERE key = :key");
+    $stmt->execute(["amount" => $amount, "key" => $key]);
+    if ($stmt->rowCount() === 0) {
+        $stmt = $pdo->prepare("INSERT INTO site_stats (key, value) VALUES (:key, :value)");
+        $stmt->execute(["key" => $key, "value" => max(0, $amount)]);
+    }
+    $pdo->commit();
+    cache_bust("stats");
+}
+
+function get_featured_drop(): ?array
+{
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT * FROM featured_drop WHERE id = 1 LIMIT 1");
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function save_featured_drop(array $data): array
+{
+    $pdo = db();
+    $now = date("c");
+    $stmt = $pdo->prepare("
+        INSERT INTO featured_drop (id, product_id, title, subtitle, cta_text, old_price, price, is_enabled, updated_at)
+        VALUES (1, :product_id, :title, :subtitle, :cta_text, :old_price, :price, :is_enabled, :updated_at)
+        ON CONFLICT(id) DO UPDATE SET
+            product_id = excluded.product_id,
+            title = excluded.title,
+            subtitle = excluded.subtitle,
+            cta_text = excluded.cta_text,
+            old_price = excluded.old_price,
+            price = excluded.price,
+            is_enabled = excluded.is_enabled,
+            updated_at = excluded.updated_at
+    ");
+    $stmt->execute([
+        "product_id" => $data["product_id"] ?? null,
+        "title" => $data["title"] ?? null,
+        "subtitle" => $data["subtitle"] ?? null,
+        "cta_text" => $data["cta_text"] ?? "Add VIP",
+        "old_price" => $data["old_price"] ?? null,
+        "price" => $data["price"] ?? 0,
+        "is_enabled" => $data["is_enabled"] ?? 0,
+        "updated_at" => $now
+    ]);
+    $saved = get_featured_drop();
+    cache_bust("featured_drop");
+    return $saved ?: ($data + ["updated_at" => $now]);
+}
+
+function cache_dir(): string
+{
+    $dir = realpath(__DIR__ . "/cache") ?: (__DIR__ . "/cache");
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    return $dir;
+}
+
+function cache_path(string $key): string
+{
+    $safe = preg_replace("/[^a-z0-9_-]/i", "_", $key);
+    return cache_dir() . "/" . $safe . ".json";
+}
+
+function cache_get(string $key, int $ttl): ?array
+{
+    $path = cache_path($key);
+    if (!file_exists($path)) {
+        return null;
+    }
+    $mtime = filemtime($path);
+    if ($mtime === false || (time() - $mtime) > $ttl) {
+        return null;
+    }
+    $raw = file_get_contents($path);
+    if ($raw === false) {
+        return null;
+    }
+    $data = json_decode($raw, true);
+    return is_array($data) ? ["data" => $data, "mtime" => $mtime] : null;
+}
+
+function cache_set(string $key, array $data): void
+{
+    $path = cache_path($key);
+    $tmp = $path . ".tmp";
+    file_put_contents($tmp, json_encode($data), LOCK_EX);
+    rename($tmp, $path);
+}
+
+function cache_bust(string $key): void
+{
+    $path = cache_path($key);
+    if (file_exists($path)) {
+        @unlink($path);
+    }
+}
+
+function conditional_not_modified(string $etag, int $lastModified): bool
+{
+    $ifNoneMatch = trim($_SERVER["HTTP_IF_NONE_MATCH"] ?? "");
+    if ($ifNoneMatch && $ifNoneMatch === $etag) {
+        http_response_code(304);
+        return true;
+    }
+    $ifModifiedSince = $_SERVER["HTTP_IF_MODIFIED_SINCE"] ?? "";
+    if ($ifModifiedSince) {
+        $since = strtotime($ifModifiedSince);
+        if ($since !== false && $since >= $lastModified) {
+            http_response_code(304);
+            return true;
+        }
+    }
+    return false;
+}
+
+function cached_json_response(array $data, int $maxAge, int $lastModified, ?string $etagSeed = null): void
+{
+    $etag = "\"" . sha1($etagSeed ?? json_encode($data)) . "\"";
+    header("ETag: " . $etag);
+    header("Last-Modified: " . gmdate("D, d M Y H:i:s", $lastModified) . " GMT");
+    header("Cache-Control: public, max-age=" . $maxAge);
+    if (conditional_not_modified($etag, $lastModified)) {
+        exit;
+    }
+    json_response($data);
+}
+
+function ensure_auth_db(): void
+{
+    static $initialized = false;
+    if (!$initialized) {
+        init_auth_db();
+        $initialized = true;
+    }
+}
+
+function admin_login(array $admin): void
+{
+    start_session();
+    session_regenerate_id(true);
+    $_SESSION["admin_id"] = $admin["id"];
+    $_SESSION["admin_username"] = $admin["username"];
+    $_SESSION["admin_role"] = $admin["role"];
+}
+
+function admin_logout(): void
+{
+    start_session();
+    unset($_SESSION["admin_id"], $_SESSION["admin_username"], $_SESSION["admin_role"]);
+    destroy_session();
+}
+
+function user_login(array $user): void
+{
+    start_session();
+    session_regenerate_id(true);
+    $_SESSION["user_id"] = $user["id"];
+    $_SESSION["steam_id"] = $user["steam_id"];
+}
+
+function user_logout(): void
+{
+    start_session();
+    unset($_SESSION["user_id"], $_SESSION["steam_id"]);
+    destroy_session();
+}
+
+function get_admin_by_username(string $username): ?array
+{
+    ensure_auth_db();
+    $pdo = auth_db();
+    $stmt = $pdo->prepare("SELECT * FROM admins WHERE username = :username LIMIT 1");
+    $stmt->execute(["username" => $username]);
+    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $admin ?: null;
+}
+
+function get_user_by_steam_id(string $steamId): ?array
+{
+    ensure_auth_db();
+    $pdo = auth_db();
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE steam_id = :steam_id LIMIT 1");
+    $stmt->execute(["steam_id" => $steamId]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $user ?: null;
+}
+
+function get_user_by_id(int $id): ?array
+{
+    ensure_auth_db();
+    $pdo = auth_db();
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id LIMIT 1");
+    $stmt->execute(["id" => $id]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $user ?: null;
+}
+
+function upsert_user(string $steamId, array $profile): array
+{
+    ensure_auth_db();
+    $pdo = auth_db();
+    $now = date("c");
+    $existing = get_user_by_steam_id($steamId);
+    $nickname = sanitize_text($profile["steam_nickname"] ?? "");
+    $avatar = sanitize_text($profile["steam_avatar"] ?? "");
+    $profileUrl = sanitize_text($profile["steam_profile_url"] ?? "");
+    if ($existing) {
+        $stmt = $pdo->prepare("
+            UPDATE users
+            SET steam_nickname = :nickname,
+                steam_avatar = :avatar,
+                steam_profile_url = :profile_url,
+                last_login_at = :last_login_at
+            WHERE id = :id
+        ");
+        $stmt->execute([
+            "nickname" => $nickname ?: $existing["steam_nickname"],
+            "avatar" => $avatar,
+            "profile_url" => $profileUrl,
+            "last_login_at" => $now,
+            "id" => $existing["id"]
+        ]);
+        return get_user_by_id((int)$existing["id"]) ?: $existing;
+    }
+    $stmt = $pdo->prepare("
+        INSERT INTO users (steam_id, steam_nickname, steam_avatar, steam_profile_url, created_at, last_login_at)
+        VALUES (:steam_id, :nickname, :avatar, :profile_url, :created_at, :last_login_at)
+    ");
+    $stmt->execute([
+        "steam_id" => $steamId,
+        "nickname" => $nickname ?: "Steam User",
+        "avatar" => $avatar,
+        "profile_url" => $profileUrl,
+        "created_at" => $now,
+        "last_login_at" => $now
+    ]);
+    init_db();
+    increment_site_stat("active_players", 1);
+    return get_user_by_id((int)$pdo->lastInsertId()) ?: [
+        "steam_id" => $steamId,
+        "steam_nickname" => $nickname ?: "Steam User",
+        "steam_avatar" => $avatar,
+        "steam_profile_url" => $profileUrl,
+        "created_at" => $now,
+        "last_login_at" => $now,
+        "is_banned" => 0
+    ];
+}
+
+function fetch_steam_profile(string $steamId): array
+{
+    $key = steam_api_key();
+    if ($key === "") {
+        throw new RuntimeException("Steam API key not configured");
+    }
+    $url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=" . urlencode($key) . "&steamids=" . urlencode($steamId);
+    $context = stream_context_create([
+        "http" => [
+            "timeout" => 5
+        ]
+    ]);
+    $raw = @file_get_contents($url, false, $context);
+    if ($raw === false) {
+        throw new RuntimeException("Failed to fetch Steam profile");
+    }
+    $data = json_decode($raw, true);
+    $players = $data["response"]["players"] ?? [];
+    if (!$players || !isset($players[0])) {
+        throw new RuntimeException("Steam profile not found");
+    }
+    $player = $players[0];
+    return [
+        "steam_nickname" => $player["personaname"] ?? "Steam User",
+        "steam_avatar" => $player["avatarfull"] ?? ($player["avatar"] ?? ""),
+        "steam_profile_url" => $player["profileurl"] ?? ""
+    ];
 }
 
 function load_products(): array
@@ -261,4 +719,3 @@ function normalize_product(array $input, array $existing = []): array
         "featured_order" => $featuredOrder,
         "created_at" => $createdAt
     ]);
-}

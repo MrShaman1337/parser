@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useCart } from "../../context/CartContext";
+import { useUserSession } from "../../context/UserSessionContext";
 
 const Header = () => {
   const { count } = useCart();
+  const { authenticated, user, logout } = useUserSession();
   const [drawerOpen, setDrawerOpen] = useState(false);
   return (
     <>
@@ -11,7 +13,7 @@ const Header = () => {
         <div className="container header-inner">
           <Link className="logo" to="/">
             <span>⚙</span>
-            <span>Rust Dominion</span>
+            <span>Go Rust</span>
           </Link>
           <nav className="nav">
             <Link to="/catalog">Catalog</Link>
@@ -26,9 +28,27 @@ const Header = () => {
             <Link className="cart-pill" to="/cart">
               🛒 <span>{count}</span>
             </Link>
-            <Link className="btn btn-secondary" to="/account">
-              Sign In
-            </Link>
+            {authenticated ? (
+              <div className="nav" style={{ gap: "0.6rem" }}>
+                <Link to="/account" className="btn btn-secondary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <img
+                    src={user?.avatar || "/assets/img/avatar.svg"}
+                    alt={user?.nickname || "User"}
+                    width={26}
+                    height={26}
+                    style={{ borderRadius: "50%" }}
+                  />
+                  <span>{user?.nickname || "Account"}</span>
+                </Link>
+                <button className="btn btn-ghost" onClick={logout}>
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <a className="btn btn-secondary" href="/api/auth/steam-login.php">
+                Sign in with Steam
+              </a>
+            )}
           </div>
           <button className="btn btn-ghost" aria-label="Open menu" onClick={() => setDrawerOpen((prev) => !prev)}>
             ☰
@@ -40,7 +60,7 @@ const Header = () => {
         <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
           <div className="logo" style={{ marginBottom: "2rem" }}>
             <span>⚙</span>
-            <span>Rust Dominion</span>
+            <span>Go Rust</span>
           </div>
           <nav className="grid">
             <Link to="/catalog">Catalog</Link>
@@ -49,9 +69,15 @@ const Header = () => {
             <Link to="/cart">Cart</Link>
           </nav>
           <div style={{ marginTop: "2rem" }}>
-            <Link className="btn btn-secondary" to="/account" style={{ width: "100%" }}>
-              Connect Account
-            </Link>
+            {authenticated ? (
+              <button className="btn btn-secondary" style={{ width: "100%" }} onClick={logout}>
+                Sign out
+              </button>
+            ) : (
+              <a className="btn btn-secondary" href="/api/auth/steam-login.php" style={{ width: "100%" }}>
+                Sign in with Steam
+              </a>
+            )}
           </div>
         </div>
       </div>

@@ -1,18 +1,21 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Suspense, lazy } from "react";
 import AppLayout from "./components/layout/AppLayout";
 import AdminLayout from "./components/layout/AdminLayout";
-import Home from "./pages/Home";
-import Catalog from "./pages/Catalog";
-import Product from "./pages/Product";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import Account from "./pages/Account";
-import Support from "./pages/Support";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminOrders from "./pages/admin/AdminOrders";
+
+const Home = lazy(() => import("./pages/Home"));
+const Catalog = lazy(() => import("./pages/Catalog"));
+const Product = lazy(() => import("./pages/Product"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const Account = lazy(() => import("./pages/Account"));
+const Support = lazy(() => import("./pages/Support"));
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
 import { CartProvider } from "./context/CartContext";
 import { AdminSessionProvider } from "./context/AdminSessionContext";
+import { UserSessionProvider } from "./context/UserSessionContext";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 
 const AppRoutes = () => {
@@ -22,7 +25,9 @@ const AppRoutes = () => {
   return (
     <CartProvider>
       <AdminSessionProvider>
-        <Routes>
+        <UserSessionProvider>
+          <Suspense fallback={null}>
+            <Routes>
           <Route element={<AppLayout enableShader={!isAdmin} />}>
             <Route path="/" element={<Home />} />
             <Route path="/catalog" element={<Catalog />} />
@@ -64,7 +69,9 @@ const AppRoutes = () => {
           />
           <Route path="/admin/index.html" element={<Navigate to="/admin" replace />} />
           <Route path="/admin/login.html" element={<Navigate to="/admin/login" replace />} />
-        </Routes>
+            </Routes>
+          </Suspense>
+        </UserSessionProvider>
       </AdminSessionProvider>
     </CartProvider>
   );

@@ -1,8 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . "/../../../server/helpers.php";
+require_once dirname(__DIR__, 3) . "/server/helpers.php";
 
-start_session();
-$_SESSION = [];
-session_destroy();
+admin_logout();
 json_response(["ok" => true]);

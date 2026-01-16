@@ -3,8 +3,10 @@ import { adminOrder, adminOrders, adminUpdateOrderStatus } from "../../api/admin
 import { useAdminSession } from "../../context/AdminSessionContext";
 
 const AdminOrders = () => {
-  const { csrf } = useAdminSession();
+  const { csrf, role } = useAdminSession();
   const [orders, setOrders] = useState<any[]>([]);
+  const canEdit = role === "admin" || role === "superadmin";
+
   const [filters, setFilters] = useState({ q: "", status: "", sort: "date" });
   const [modalOpen, setModalOpen] = useState(false);
   const [current, setCurrent] = useState<any | null>(null);
@@ -25,6 +27,7 @@ const AdminOrders = () => {
   };
 
   const updateStatus = async () => {
+    if (!canEdit) return;
     if (!current) return;
     await adminUpdateOrderStatus(current.id, current.status, csrf);
     setModalOpen(false);
@@ -125,6 +128,7 @@ const AdminOrders = () => {
                 <label>Update status</label>
                 <select
                   value={current.status}
+                  disabled={!canEdit}
                   onChange={(e) => setCurrent({ ...current, status: e.target.value })}
                 >
                   <option value="new">New</option>
@@ -132,7 +136,7 @@ const AdminOrders = () => {
                   <option value="delivered">Delivered</option>
                   <option value="canceled">Canceled</option>
                 </select>
-                <button className="btn btn-primary" style={{ marginTop: "0.8rem" }} onClick={updateStatus}>
+                <button className="btn btn-primary" style={{ marginTop: "0.8rem" }} onClick={updateStatus} disabled={!canEdit}>
                   Save status
                 </button>
               </div>

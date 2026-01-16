@@ -16,7 +16,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <aside className="admin-sidebar">
           <div className="logo">
             <span>⚙</span>
-            <span>Rust Admin</span>
+            <span>Go Rust Admin</span>
           </div>
           <nav className="grid" style={{ marginTop: "2rem" }}>
             <Link to="/">View Site</Link>

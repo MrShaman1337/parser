@@ -7,7 +7,7 @@
   </defs>
   <rect width="1200" height="630" fill="url(#og)" />
   <text x="50%" y="50%" text-anchor="middle" fill="#e9eef5" font-family="Segoe UI, Arial" font-size="48">
-    Rust Dominion
+    Go Rust
   </text>
   <text x="50%" y="58%" text-anchor="middle" fill="#97a3b5" font-family="Segoe UI, Arial" font-size="24">
     Premium Rust Storefront

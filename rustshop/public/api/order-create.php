@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . "/../../server/helpers.php";
+require_once dirname(__DIR__, 2) . "/server/helpers.php";
 
 rate_limit("order_create", 10, 60);
 init_db();
@@ -50,6 +50,7 @@ $total = $subtotal;
 $orderId = "ORD-" . date("Ymd") . "-" . strtoupper(bin2hex(random_bytes(2)));
 
 $pdo = db();
+$pdo->beginTransaction();
 $stmt = $pdo->prepare("
     INSERT INTO orders (id, created_at, status, customer_email, customer_name, customer_note, items_json, subtotal, total, currency, ip, user_agent)
     VALUES (:id, :created_at, :status, :email, :name, :note, :items, :subtotal, :total, :currency, :ip, :ua)
@@ -68,6 +69,12 @@ $stmt->execute([
     ":ip" => $_SERVER["REMOTE_ADDR"] ?? "",
     ":ua" => substr($_SERVER["HTTP_USER_AGENT"] ?? "", 0, 255)
 ]);
+$stmt = $pdo->prepare("INSERT OR IGNORE INTO site_stats (key, value) VALUES (:key, :value)");
+$stmt->execute(["key" => "orders_delivered", "value" => 214]);
+$stmt = $pdo->prepare("UPDATE site_stats SET value = value + 1 WHERE key = :key");
+$stmt->execute(["key" => "orders_delivered"]);
+$pdo->commit();
+cache_bust("stats");
 
 json_response([
     "ok" => true,

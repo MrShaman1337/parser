@@ -6,6 +6,8 @@ type AdminSession = {
   authenticated: boolean;
   csrf: string;
   featuredLimit: number;
+  username: string;
+  role: string;
   refresh: () => Promise<void>;
 };
 
@@ -16,6 +18,8 @@ export const AdminSessionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [authenticated, setAuthenticated] = useState(false);
   const [csrf, setCsrf] = useState("");
   const [featuredLimit, setFeaturedLimit] = useState(8);
+  const [username, setUsername] = useState("");
+  const [role, setRole] = useState("");
 
   const refresh = async () => {
     setLoading(true);
@@ -24,9 +28,13 @@ export const AdminSessionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setAuthenticated(true);
       setCsrf(data.csrf_token);
       setFeaturedLimit(data.featured_limit || 8);
+      setUsername(data.user || "");
+      setRole(data.role || "");
     } catch {
       setAuthenticated(false);
       setCsrf("");
+      setUsername("");
+      setRole("");
     } finally {
       setLoading(false);
     }
@@ -37,7 +45,7 @@ export const AdminSessionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   return (
-    <AdminSessionContext.Provider value={{ loading, authenticated, csrf, featuredLimit, refresh }}>
+    <AdminSessionContext.Provider value={{ loading, authenticated, csrf, featuredLimit, username, role, refresh }}>
       {children}
     </AdminSessionContext.Provider>
   );
