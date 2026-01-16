@@ -13,6 +13,97 @@ Premium Rust shop storefront with a PHP admin panel, JSON product storage, and S
   - `helpers.php`
   - `/data/store.sqlite` (auto-created)
 
+## Установка на Ubuntu 24.04 (полная инструкция, Apache2:8080)
+
+### 1) Установка пакетов
+```bash
+sudo apt update
+sudo apt install -y apache2 php libapache2-mod-php php-sqlite3 php-mbstring php-xml php-curl
+```
+
+### 2) Структура каталогов
+```bash
+sudo mkdir -p /var/www/rustshop/public
+sudo mkdir -p /var/www/rustshop/server
+```
+
+### 3) Копирование файлов проекта
+Из корня репозитория:
+```bash
+sudo cp -R public/* /var/www/rustshop/public/
+sudo cp -R server/* /var/www/rustshop/server/
+```
+
+### Безопасное развертывание (ВАЖНО)
+Никогда не перезаписывайте `/public/api` и `/public/admin/api` сборкой фронтенда.
+```bash
+rsync -av --delete dist/ public/ --exclude "api/" --exclude "admin/api/"
+```
+
+### 4) VHost Apache2 на порту 8080
+Создайте `/etc/apache2/sites-available/rustshop.conf`:
+```
+Listen 8080
+<VirtualHost *:8080>
+    ServerName YOUR-IP
+    DocumentRoot /var/www/rustshop/public
+
+    <Directory /var/www/rustshop/public>
+        Options -Indexes
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/rustshop_error.log
+    CustomLog ${APACHE_LOG_DIR}/rustshop_access.log combined
+</VirtualHost>
+```
+Включение модулей и сайта:
+```bash
+sudo a2enmod rewrite
+sudo a2ensite rustshop.conf
+sudo a2dissite 000-default.conf
+sudo systemctl restart apache2
+```
+
+### 5) Права доступа (SQLite и загрузки)
+```bash
+sudo chown -R www-data:www-data /var/www/rustshop/public
+sudo chown -R www-data:www-data /var/www/rustshop/server
+sudo chmod -R 755 /var/www/rustshop/public
+sudo chmod -R 755 /var/www/rustshop/server
+sudo chmod -R 775 /var/www/rustshop/public/assets/uploads
+sudo chmod -R 775 /var/www/rustshop/public/data
+sudo chmod -R 775 /var/www/rustshop/server/data
+sudo chmod -R 775 /var/www/rustshop/server/cache
+```
+`/var/www/rustshop/server/data` содержит `auth.sqlite` (users/admins) и `store.sqlite` (orders).
+
+### 6) Steam API key и админ
+Создайте `/var/www/rustshop/server/env.php`:
+```php
+<?php
+return [
+    "steam_api_key" => "YOUR_STEAM_API_KEY"
+];
+```
+Создайте первого администратора:
+```bash
+php /var/www/rustshop/server/create_admin.php admin STRONG_PASSWORD superadmin
+```
+
+### 7) Проверка
+- Сайт: `http://YOUR-IP:8080/`
+- Админка: `http://YOUR-IP:8080/admin/`
+- API auth: `http://YOUR-IP:8080/api/auth/session.php`
+
+### 8) Быстрая диагностика
+```bash
+php /var/www/rustshop/server/health_check.php
+curl -I http://YOUR-IP:8080/api/auth/steam-login.php
+curl http://YOUR-IP:8080/admin/api/login.php
+```
+
 ## Ubuntu 24.04 Installation (Step-by-Step)
 
 ### 1) Install packages

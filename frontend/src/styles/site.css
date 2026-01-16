@@ -362,6 +362,47 @@ a {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.hover-footer__bg {
+  animation: hover-footer-glow 8s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+.hover-footer__float {
+  animation: hover-footer-float 6s ease-in-out infinite;
+}
+
+.hover-footer__outline {
+  transition: text-shadow 0.3s ease;
+}
+
+.hover-footer__outline:hover {
+  text-shadow: 0 0 30px rgba(60, 162, 250, 0.45);
+}
+
+@keyframes hover-footer-glow {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes hover-footer-float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
 .footer-grid {
   display: grid;
   gap: var(--space-3);
