@@ -14,7 +14,7 @@ const Support = () => {
     const formData = new FormData(form);
     const payload = {
       name: String(formData.get("name") || ""),
-      email: String(formData.get("email") || ""),
+      contact: String(formData.get("contact") || ""),
       orderId: String(formData.get("orderId") || ""),
       message: String(formData.get("message") || ""),
       lang
@@ -66,8 +66,8 @@ const Support = () => {
           <form onSubmit={handleSubmit}>
             <label htmlFor="support-name">{t("support.name")}</label>
             <input id="support-name" name="name" type="text" required />
-            <label htmlFor="support-email">{t("support.email")}</label>
-            <input id="support-email" name="email" type="email" />
+            <label htmlFor="support-contact">{t("support.contact_field")}</label>
+            <input id="support-contact" name="contact" type="text" placeholder={t("support.contact_placeholder")} />
             <label htmlFor="support-order">{t("support.orderId")}</label>
             <input id="support-order" name="orderId" type="text" />
             <label htmlFor="support-message">{t("support.message")}</label>

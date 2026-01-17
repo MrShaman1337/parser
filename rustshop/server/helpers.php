@@ -319,9 +319,68 @@ function init_db(): void
         );
     ");
 
+    // Add user_id and steam_id to orders if not exists
+    $orderColumns = $pdo->query("PRAGMA table_info(orders)")->fetchAll(PDO::FETCH_ASSOC);
+    $orderColumnNames = array_map(function ($col) {
+        return $col["name"] ?? "";
+    }, $orderColumns);
+    if (!in_array("user_id", $orderColumnNames, true)) {
+        $pdo->exec("ALTER TABLE orders ADD COLUMN user_id INTEGER");
+    }
+    if (!in_array("steam_id", $orderColumnNames, true)) {
+        $pdo->exec("ALTER TABLE orders ADD COLUMN steam_id TEXT");
+    }
+    if (!in_array("payment_provider", $orderColumnNames, true)) {
+        $pdo->exec("ALTER TABLE orders ADD COLUMN payment_provider TEXT");
+    }
+    if (!in_array("payment_reference", $orderColumnNames, true)) {
+        $pdo->exec("ALTER TABLE orders ADD COLUMN payment_reference TEXT");
+    }
+
+    // Create order_items table for detailed purchase history
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS order_items (
+            id TEXT PRIMARY KEY,
+            order_id TEXT NOT NULL,
+            product_id TEXT NOT NULL,
+            product_name TEXT NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 1,
+            unit_price REAL NOT NULL,
+            rust_command_template_snapshot TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (order_id) REFERENCES orders(id)
+        );
+    ");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS order_items_order_idx ON order_items(order_id);");
+
+    // Create cart_entries table for Rust plugin to read
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS cart_entries (
+            id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            steam_id TEXT NOT NULL,
+            order_id TEXT,
+            product_id TEXT NOT NULL,
+            product_name TEXT NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 1,
+            rust_command_template_snapshot TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            attempt_count INTEGER NOT NULL DEFAULT 0,
+            last_error TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            delivered_at TEXT,
+            FOREIGN KEY (order_id) REFERENCES orders(id)
+        );
+    ");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS cart_entries_steam_status_idx ON cart_entries(steam_id, status);");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS cart_entries_status_created_idx ON cart_entries(status, created_at);");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS cart_entries_user_idx ON cart_entries(user_id);");
+
     $pdo->exec("CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);");
     $pdo->exec("CREATE INDEX IF NOT EXISTS orders_created_idx ON orders(created_at);");
     $pdo->exec("CREATE INDEX IF NOT EXISTS orders_email_idx ON orders(customer_email);");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS orders_user_idx ON orders(user_id);");
 
     $pdo->beginTransaction();
     $stmt = $pdo->prepare("INSERT OR IGNORE INTO site_stats (key, value) VALUES (:key, :value)");
@@ -725,6 +784,242 @@ function format_balance_with_usd(float $amountRub, float $rate = 90.0): string
 
 // ============== END BALANCE FUNCTIONS ==============
 
+// ============== CART ENTRIES (RUST PLUGIN DELIVERY) FUNCTIONS ==============
+
+/**
+ * Create cart entries for a paid order. Called after successful payment.
+ * These entries will be read by the Rust plugin for in-game delivery.
+ */
+function create_cart_entries_for_order(string $orderId, int $userId, string $steamId, array $orderItems): array
+{
+    init_db();
+    $pdo = db();
+    $now = date("c");
+    $entries = [];
+
+    foreach ($orderItems as $item) {
+        $entryId = "CE-" . strtoupper(bin2hex(random_bytes(6)));
+        $stmt = $pdo->prepare("
+            INSERT INTO cart_entries (
+                id, user_id, steam_id, order_id, product_id, product_name, quantity,
+                rust_command_template_snapshot, status, attempt_count, created_at, updated_at
+            ) VALUES (
+                :id, :user_id, :steam_id, :order_id, :product_id, :product_name, :quantity,
+                :rust_command, :status, 0, :created_at, :updated_at
+            )
+        ");
+        $stmt->execute([
+            ":id" => $entryId,
+            ":user_id" => $userId,
+            ":steam_id" => $steamId,
+            ":order_id" => $orderId,
+            ":product_id" => $item["product_id"] ?? $item["id"] ?? "",
+            ":product_name" => $item["product_name"] ?? $item["name"] ?? "Item",
+            ":quantity" => intval($item["qty"] ?? $item["quantity"] ?? 1),
+            ":rust_command" => $item["rust_command_template_snapshot"] ?? "",
+            ":status" => "pending",
+            ":created_at" => $now,
+            ":updated_at" => $now
+        ]);
+        $entries[] = [
+            "id" => $entryId,
+            "product_id" => $item["product_id"] ?? $item["id"] ?? "",
+            "product_name" => $item["product_name"] ?? $item["name"] ?? "Item",
+            "quantity" => intval($item["qty"] ?? $item["quantity"] ?? 1),
+            "status" => "pending"
+        ];
+    }
+
+    return $entries;
+}
+
+/**
+ * Create order_items records for purchase history.
+ */
+function create_order_items(string $orderId, array $items): void
+{
+    init_db();
+    $pdo = db();
+    $now = date("c");
+
+    $stmt = $pdo->prepare("
+        INSERT INTO order_items (id, order_id, product_id, product_name, quantity, unit_price, rust_command_template_snapshot, created_at)
+        VALUES (:id, :order_id, :product_id, :product_name, :quantity, :unit_price, :rust_command, :created_at)
+    ");
+
+    foreach ($items as $item) {
+        $itemId = "OI-" . strtoupper(bin2hex(random_bytes(6)));
+        $stmt->execute([
+            ":id" => $itemId,
+            ":order_id" => $orderId,
+            ":product_id" => $item["product_id"] ?? $item["id"] ?? "",
+            ":product_name" => $item["product_name"] ?? $item["name"] ?? "Item",
+            ":quantity" => intval($item["qty"] ?? $item["quantity"] ?? 1),
+            ":unit_price" => floatval($item["price"] ?? $item["unit_price"] ?? 0),
+            ":rust_command" => $item["rust_command_template_snapshot"] ?? "",
+            ":created_at" => $now
+        ]);
+    }
+}
+
+/**
+ * Get user's cart entries (pending delivery items).
+ */
+function get_user_cart_entries(int $userId, ?string $status = null, int $limit = 100): array
+{
+    init_db();
+    $pdo = db();
+
+    $sql = "SELECT * FROM cart_entries WHERE user_id = :user_id";
+    $params = [":user_id" => $userId];
+
+    if ($status !== null) {
+        $sql .= " AND status = :status";
+        $params[":status"] = $status;
+    }
+
+    $sql .= " ORDER BY created_at DESC LIMIT :limit";
+
+    $stmt = $pdo->prepare($sql);
+    foreach ($params as $key => $val) {
+        $stmt->bindValue($key, $val);
+    }
+    $stmt->bindValue(":limit", $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Get user's order history with items.
+ */
+function get_user_orders(int $userId, int $limit = 50): array
+{
+    init_db();
+    $pdo = db();
+
+    $stmt = $pdo->prepare("
+        SELECT * FROM orders 
+        WHERE user_id = :user_id 
+        ORDER BY created_at DESC 
+        LIMIT :limit
+    ");
+    $stmt->bindValue(":user_id", $userId, PDO::PARAM_INT);
+    $stmt->bindValue(":limit", $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Fetch items for each order
+    $stmtItems = $pdo->prepare("SELECT * FROM order_items WHERE order_id = :order_id ORDER BY created_at ASC");
+
+    foreach ($orders as &$order) {
+        $stmtItems->execute([":order_id" => $order["id"]]);
+        $order["items"] = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Parse items_json for backward compatibility
+        if (empty($order["items"]) && !empty($order["items_json"])) {
+            $order["items"] = json_decode($order["items_json"], true) ?: [];
+        }
+    }
+
+    return $orders;
+}
+
+/**
+ * Get pending cart entries for a specific Steam ID (for Rust plugin).
+ */
+function get_pending_cart_entries_by_steam_id(string $steamId): array
+{
+    init_db();
+    $pdo = db();
+
+    $stmt = $pdo->prepare("
+        SELECT * FROM cart_entries 
+        WHERE steam_id = :steam_id AND status = 'pending'
+        ORDER BY created_at ASC
+    ");
+    $stmt->execute([":steam_id" => $steamId]);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Update cart entry status (for Rust plugin).
+ */
+function update_cart_entry_status(string $entryId, string $status, ?string $error = null): bool
+{
+    init_db();
+    $pdo = db();
+    $now = date("c");
+
+    $validStatuses = ["pending", "delivering", "delivered", "failed", "cancelled"];
+    if (!in_array($status, $validStatuses, true)) {
+        return false;
+    }
+
+    $sql = "UPDATE cart_entries SET status = :status, updated_at = :updated_at";
+    $params = [
+        ":status" => $status,
+        ":updated_at" => $now,
+        ":id" => $entryId
+    ];
+
+    if ($status === "failed" && $error !== null) {
+        $sql .= ", attempt_count = attempt_count + 1, last_error = :error";
+        $params[":error"] = $error;
+    }
+
+    if ($status === "delivered") {
+        $sql .= ", delivered_at = :delivered_at";
+        $params[":delivered_at"] = $now;
+    }
+
+    $sql .= " WHERE id = :id";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->rowCount() > 0;
+}
+
+/**
+ * Resolve placeholders in Rust command template.
+ */
+function resolve_rust_command_placeholders(string $template, array $context): string
+{
+    $placeholders = [
+        "{steamid}" => $context["steam_id"] ?? "",
+        "{qty}" => strval($context["quantity"] ?? 1),
+        "{productId}" => $context["product_id"] ?? "",
+        "{orderId}" => $context["order_id"] ?? "",
+        "{username}" => sanitize_rust_username($context["username"] ?? "Player")
+    ];
+
+    return str_replace(array_keys($placeholders), array_values($placeholders), $template);
+}
+
+/**
+ * Sanitize username for Rust command (allow only safe characters).
+ */
+function sanitize_rust_username(string $username): string
+{
+    // Allow only alphanumeric, space, underscore, hyphen
+    $clean = preg_replace("/[^a-zA-Z0-9 _-]/", "", $username);
+    // Trim to max 32 chars
+    return substr(trim($clean), 0, 32) ?: "Player";
+}
+
+/**
+ * Validate Steam ID format (17-digit numeric string).
+ */
+function validate_steam_id(string $steamId): bool
+{
+    return preg_match("/^[0-9]{17}$/", $steamId) === 1;
+}
+
+// ============== END CART ENTRIES FUNCTIONS ==============
+
 function fetch_steam_profile(string $steamId): array
 {
     $key = steam_api_key();
@@ -781,6 +1076,8 @@ function ensure_products_table(): void
             is_active INTEGER DEFAULT 1,
             is_featured INTEGER DEFAULT 0,
             featured_order INTEGER DEFAULT 0,
+            product_type TEXT DEFAULT 'item',
+            rust_command_template TEXT,
             created_at TEXT,
             updated_at TEXT
         );
@@ -791,6 +1088,12 @@ function ensure_products_table(): void
     }, $columns);
     if (!in_array("region", $columnNames, true)) {
         $pdo->exec("ALTER TABLE products ADD COLUMN region TEXT NOT NULL DEFAULT 'eu'");
+    }
+    if (!in_array("product_type", $columnNames, true)) {
+        $pdo->exec("ALTER TABLE products ADD COLUMN product_type TEXT DEFAULT 'item'");
+    }
+    if (!in_array("rust_command_template", $columnNames, true)) {
+        $pdo->exec("ALTER TABLE products ADD COLUMN rust_command_template TEXT");
     }
     $pdo->exec("CREATE INDEX IF NOT EXISTS products_category_idx ON products(category);");
     $pdo->exec("CREATE INDEX IF NOT EXISTS products_featured_idx ON products(is_featured);");
@@ -981,11 +1284,11 @@ function upsert_product(array $input, ?string $id = null): array
         INSERT INTO products (
             id, name, title, perks, short_description, full_description, price, compare_at, discount, image,
             gallery_json, items_json, requirements, delivery, category, tags_json, variants_json, popularity,
-            is_active, is_featured, featured_order, created_at, updated_at
+            is_active, is_featured, featured_order, product_type, rust_command_template, created_at, updated_at
         ) VALUES (
             :id, :name, :title, :perks, :short_description, :full_description, :price, :compare_at, :discount, :image,
             :gallery_json, :items_json, :requirements, :delivery, :category, :tags_json, :variants_json, :popularity,
-            :is_active, :is_featured, :featured_order, :created_at, :updated_at
+            :is_active, :is_featured, :featured_order, :product_type, :rust_command_template, :created_at, :updated_at
         )
         ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
@@ -1008,6 +1311,8 @@ function upsert_product(array $input, ?string $id = null): array
             is_active = excluded.is_active,
             is_featured = excluded.is_featured,
             featured_order = excluded.featured_order,
+            product_type = excluded.product_type,
+            rust_command_template = excluded.rust_command_template,
             updated_at = excluded.updated_at
     ");
     $stmt->execute([
@@ -1032,6 +1337,8 @@ function upsert_product(array $input, ?string $id = null): array
         "is_active" => !empty($normalized["is_active"]) ? 1 : 0,
         "is_featured" => !empty($normalized["is_featured"]) ? 1 : 0,
         "featured_order" => intval($normalized["featured_order"] ?? 0),
+        "product_type" => sanitize_text($normalized["product_type"] ?? "item"),
+        "rust_command_template" => $normalized["rust_command_template"] ?? "",
         "created_at" => $normalized["created_at"] ?? date("Y-m-d"),
         "updated_at" => $now
     ]);
@@ -1097,6 +1404,8 @@ function product_row_to_array(array $row): array
         "perks" => $row["perks"] ?: null,
         "short_description" => $row["short_description"] ?: null,
         "full_description" => $row["full_description"] ?: null,
+        "product_type" => $row["product_type"] ?? "item",
+        "rust_command_template" => $row["rust_command_template"] ?? null,
         "price" => $price,
         "priceFormatted" => $currency . number_format($price, 2),
         "compareAt" => $row["compare_at"] ?: null,
@@ -1252,6 +1561,14 @@ function normalize_product(array $input, array $existing = []): array
     $featuredOrder = intval($input["featured_order"] ?? $existing["featured_order"] ?? 0);
     $popularity = intval($input["popularity"] ?? $existing["popularity"] ?? 0);
     $createdAt = $existing["created_at"] ?? date("Y-m-d");
+    
+    // New fields for Rust integration
+    $productType = sanitize_text($input["product_type"] ?? $existing["product_type"] ?? "item");
+    $validTypes = ["privilege", "kit", "item", "mixed"];
+    if (!in_array($productType, $validTypes, true)) {
+        $productType = "item";
+    }
+    $rustCommandTemplate = $input["rust_command_template"] ?? $existing["rust_command_template"] ?? "";
 
     return array_merge($existing, [
         "name" => $name,
@@ -1274,6 +1591,8 @@ function normalize_product(array $input, array $existing = []): array
         "is_active" => $isActive,
         "is_featured" => $isFeatured,
         "featured_order" => $featuredOrder,
+        "product_type" => $productType,
+        "rust_command_template" => $rustCommandTemplate,
         "created_at" => $createdAt
     ]);
 }

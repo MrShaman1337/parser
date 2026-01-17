@@ -10,16 +10,13 @@ rate_limit("support_send", 5, 60);
 
 $data = read_input();
 $name = sanitize_text($data["name"] ?? "");
-$email = sanitize_text($data["email"] ?? "");
+$contact = sanitize_text($data["contact"] ?? "");
 $orderId = sanitize_text($data["orderId"] ?? "");
 $message = sanitize_text($data["message"] ?? "");
 $lang = sanitize_text($data["lang"] ?? "en");
 
 if ($message === "") {
     json_response(["error" => "Message is required"], 400);
-}
-if ($email !== "" && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    json_response(["error" => "Invalid email"], 400);
 }
 
 $env = env_config();
@@ -29,12 +26,14 @@ if ($token === "" || $chatId === "") {
     json_response(["error" => "Telegram is not configured"], 500);
 }
 
-$text = "GO RUST Support\n";
-$text .= "Lang: " . ($lang === "ru" ? "RU" : "EN") . "\n";
-$text .= "Name: " . ($name ?: "-") . "\n";
-$text .= "Email: " . ($email ?: "-") . "\n";
-$text .= "Order ID: " . ($orderId ?: "-") . "\n";
-$text .= "Message:\n" . $message;
+$text = "🛒 GO RUST Support\n";
+$text .= "━━━━━━━━━━━━━━━━━━\n";
+$text .= "🌍 Lang: " . ($lang === "ru" ? "RU" : "EN") . "\n";
+$text .= "👤 Name: " . ($name ?: "-") . "\n";
+$text .= "💬 Telegram/Discord: " . ($contact ?: "-") . "\n";
+$text .= "📦 Order ID: " . ($orderId ?: "-") . "\n";
+$text .= "━━━━━━━━━━━━━━━━━━\n";
+$text .= "📝 Message:\n" . $message;
 
 $payload = http_build_query([
     "chat_id" => $chatId,

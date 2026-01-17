@@ -1,0 +1,11 @@
+{
+  "API Base URL": "https://gorust.shop",
+  "API Key": "",
+  "Check Interval (seconds)": 30.0,
+  "Auto Deliver on Connect": true,
+  "Show UI Notification": true,
+  "UI Notification Duration (seconds)": 10.0,
+  "Chat Command": "claim",
+  "Console Command": "shop.claim",
+  "Debug Mode": false
+}

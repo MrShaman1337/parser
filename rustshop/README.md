@@ -221,6 +221,157 @@ sudo systemctl restart apache2
 - Use HTTPS for production.
 - Create a superadmin via `server/create_admin.php` and use a strong password.
 
+---
+
+## Rust Plugin Integration (Cart on Server)
+
+This shop uses a **database-driven delivery system**. When a user purchases items:
+1. The website writes entries to the `cart_entries` table
+2. The Rust plugin polls the database and delivers items when player clicks "Claim"
+3. No webhooks required — plugin reads directly from DB
+
+### Database Schema
+
+**cart_entries** (what the plugin reads):
+- `id` - unique entry ID (e.g., "CE-A1B2C3D4E5F6")
+- `steam_id` - player's Steam ID (17 digits)
+- `order_id` - reference to the order
+- `product_id` - product identifier
+- `product_name` - product name for display
+- `quantity` - number of items
+- `rust_command_template_snapshot` - command to execute (snapshot at purchase time)
+- `status` - "pending" | "delivering" | "delivered" | "failed" | "cancelled"
+- `attempt_count` - number of delivery attempts
+- `last_error` - error message if failed
+- `created_at`, `updated_at`, `delivered_at`
+
+### Rust Command Template Placeholders
+
+When editing products in admin, use these placeholders in the "Rust Console Command" field:
+- `{steamid}` — Player's Steam ID
+- `{qty}` — Quantity purchased
+- `{productId}` — Product ID
+- `{orderId}` — Order ID
+- `{username}` — Player's display name (sanitized)
+
+**Examples:**
+```
+inventory.giveto {steamid} rifle.ak {qty}
+grant user {steamid} vip.package
+kit.give {steamid} starter
+```
+
+### Plugin API Endpoints
+
+**GET /api/rust/pending.php?steam_id=76561198XXXXXXXXX&api_key=XXX**
+Returns pending items for a Steam ID:
+```json
+{
+  "ok": true,
+  "steam_id": "76561198XXXXXXXXX",
+  "entries": [
+    {
+      "id": "CE-A1B2C3D4E5F6",
+      "steam_id": "76561198XXXXXXXXX",
+      "order_id": "ORD-20260117-ABCD",
+      "product_id": "vip-package",
+      "product_name": "VIP Package",
+      "quantity": 1,
+      "rust_command": "grant user {steamid} vip.package",
+      "created_at": "2026-01-17T12:00:00+00:00"
+    }
+  ],
+  "count": 1
+}
+```
+
+**POST /api/rust/claim.php**
+Claim all pending items (marks as "delivering"):
+```json
+{
+  "steam_id": "76561198XXXXXXXXX"
+}
+```
+
+**POST /api/rust/update.php**
+Update entry status after delivery:
+```json
+{
+  "entry_id": "CE-A1B2C3D4E5F6",
+  "status": "delivered"
+}
+```
+or for failures:
+```json
+{
+  "entry_id": "CE-A1B2C3D4E5F6",
+  "status": "failed",
+  "error": "Player not connected"
+}
+```
+
+### Plugin API Key (Optional)
+
+Add to `/var/www/rustshop/server/env.php`:
+```php
+<?php
+return [
+    "steam_api_key" => "YOUR_STEAM_API_KEY",
+    "TELEGRAM_BOT_TOKEN" => "YOUR_BOT_TOKEN",
+    "TELEGRAM_CHAT_ID" => "YOUR_CHAT_ID",
+    "RUST_PLUGIN_API_KEY" => "YOUR_SECRET_PLUGIN_API_KEY"
+];
+```
+
+### Direct Database Access (Alternative)
+
+If your plugin can connect directly to SQLite, you can:
+
+**Read pending entries:**
+```sql
+SELECT * FROM cart_entries 
+WHERE status = 'pending' AND steam_id = ? 
+ORDER BY created_at ASC;
+```
+
+**Mark as delivering:**
+```sql
+UPDATE cart_entries 
+SET status = 'delivering', updated_at = datetime('now') 
+WHERE id = ?;
+```
+
+**Mark as delivered:**
+```sql
+UPDATE cart_entries 
+SET status = 'delivered', delivered_at = datetime('now'), updated_at = datetime('now') 
+WHERE id = ?;
+```
+
+**Mark as failed:**
+```sql
+UPDATE cart_entries 
+SET status = 'failed', attempt_count = attempt_count + 1, last_error = ?, updated_at = datetime('now') 
+WHERE id = ?;
+```
+
+### Testing with Admin API
+
+Use the admin test endpoint to simulate purchases without payment:
+```bash
+curl -X POST "http://YOUR-IP:8080/admin/api/test-payment.php" \
+  -H "Content-Type: application/json" \
+  -H "Cookie: PHPSESSID=your_admin_session" \
+  -d '{
+    "user_id": 1,
+    "products": [
+      {"product_id": "vip-package", "quantity": 1}
+    ]
+  }'
+```
+
+---
+
 ## Performance & Caching Setup
 Apache (via `.htaccess`) configures:
 - Long-lived cache for hashed assets (JS/CSS/fonts/images).

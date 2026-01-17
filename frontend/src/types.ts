@@ -22,6 +22,8 @@ export type Product = {
   is_active?: boolean;
   is_featured?: boolean;
   featured_order?: number;
+  product_type?: "privilege" | "kit" | "item" | "mixed";
+  rust_command_template?: string;
   created_at?: string;
 };
 
@@ -34,16 +36,6 @@ export type CartItem = {
   qty: number;
 };
 
-export type Order = {
-  id: string;
-  created_at: string;
-  status: string;
-  customer_email: string;
-  customer_name?: string;
-  customer_note?: string;
-  total: number | string;
-  currency?: string;
-};
 
 export type User = {
   id: number;
@@ -66,4 +58,42 @@ export type FeaturedDrop = {
   price: number;
   is_enabled: boolean;
   product?: Product;
+};
+
+// Order and purchase history types
+export type OrderItem = {
+  id: string;
+  product_id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  price_formatted: string;
+};
+
+export type Order = {
+  id: string;
+  created_at: string;
+  status: string;
+  total: number;
+  total_formatted: string;
+  currency: string;
+  items: OrderItem[];
+};
+
+// Cart entries for Rust delivery
+export type CartEntry = {
+  id: string;
+  order_id: string;
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  status: "pending" | "delivering" | "delivered" | "failed" | "cancelled";
+  attempt_count: number;
+  last_error?: string;
+  created_at: string;
+  delivered_at?: string;
+  status_label: {
+    en: string;
+    ru: string;
+  };
 };

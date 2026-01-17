@@ -29,7 +29,9 @@ const emptyProduct: Partial<Product> = {
   popularity: 0,
   is_active: true,
   is_featured: false,
-  featured_order: 0
+  featured_order: 0,
+  product_type: "item",
+  rust_command_template: ""
 };
 
 const emptyFeaturedDrop = {
@@ -455,6 +457,29 @@ const AdminDashboard = () => {
               <div className="admin-form-wide">
                 <label>Delivery</label>
                 <input value={form.delivery || ""} onChange={(e) => setForm({ ...form, delivery: e.target.value })} />
+              </div>
+              <div>
+                <label>Product Type</label>
+                <select 
+                  value={form.product_type || "item"} 
+                  onChange={(e) => setForm({ ...form, product_type: e.target.value as any })}
+                >
+                  <option value="item">Item</option>
+                  <option value="kit">Kit</option>
+                  <option value="privilege">Privilege / VIP</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+              </div>
+              <div className="admin-form-wide">
+                <label>Rust Console Command</label>
+                <input 
+                  value={form.rust_command_template || ""} 
+                  onChange={(e) => setForm({ ...form, rust_command_template: e.target.value })} 
+                  placeholder="inventory.giveto {steamid} rifle.ak {qty}"
+                />
+                <small className="muted" style={{ display: "block", marginTop: "0.25rem", fontSize: "0.75rem" }}>
+                  Placeholders: {"{steamid}"}, {"{qty}"}, {"{productId}"}, {"{orderId}"}, {"{username}"}
+                </small>
               </div>
               <div className="admin-form-wide">
                 <label>Image URL</label>
