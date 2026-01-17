@@ -1,5 +1,6 @@
 export type Product = {
   id: string;
+  region?: "eu" | "ru";
   name?: string;
   title?: string;
   perks?: string;

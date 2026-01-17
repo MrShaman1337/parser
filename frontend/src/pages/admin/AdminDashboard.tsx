@@ -45,6 +45,7 @@ const emptyFeaturedDrop = {
 const AdminDashboard = () => {
   const { csrf, featuredLimit, role } = useAdminSession();
   const [products, setProducts] = useState<Product[]>([]);
+  const [region, setRegion] = useState<"eu" | "ru">("eu");
   const canEdit = role === "admin" || role === "superadmin";
 
   const [filters, setFilters] = useState({ q: "", category: "", featured: "", sort: "name" });
@@ -60,7 +61,7 @@ const AdminDashboard = () => {
   };
 
   const load = async () => {
-    const [productsData, dropData] = await Promise.all([adminProducts(), adminFeaturedDrop()]);
+    const [productsData, dropData] = await Promise.all([adminProducts(region), adminFeaturedDrop(region)]);
     setProducts(productsData.products || []);
     const drop = dropData.featured_drop || null;
     if (drop) {
@@ -80,7 +81,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [region]);
 
   const filtered = useMemo(() => {
     let list = [...products];
@@ -106,7 +107,7 @@ const AdminDashboard = () => {
 
   const openModal = (product?: Product) => {
     if (!canEdit) return;
-    setForm(product ? { ...product } : { ...emptyProduct });
+    setForm(product ? { ...product } : { ...emptyProduct, region });
     setModalOpen(true);
   };
 
@@ -115,6 +116,7 @@ const AdminDashboard = () => {
     if (!canEdit) return;
     const payload = {
       ...form,
+      region,
       tags: typeof form.tags === "string" ? form.tags : (form.tags || []).join(", "),
       gallery: typeof form.gallery === "string" ? form.gallery : (form.gallery || []).join(", "),
       variants: typeof form.variants === "string" ? form.variants : (form.variants || []).join(", "),
@@ -137,7 +139,7 @@ const AdminDashboard = () => {
   const handleDelete = async () => {
     if (!canEdit) return;
     if (!form.id) return;
-    await adminDeleteProduct(form.id, csrf);
+    await adminDeleteProduct(form.id, csrf, region);
     setProducts((prev) => prev.map((p) => (p.id === form.id ? { ...p, is_active: false } : p)));
     setModalOpen(false);
   };
@@ -151,7 +153,7 @@ const AdminDashboard = () => {
   const handleFeaturedSave = async () => {
     if (!canEdit) return;
     const ids = featured.map((p) => p.id);
-    await adminSaveFeatured(ids, csrf);
+    await adminSaveFeatured(ids, csrf, region);
     await load();
   };
 
@@ -166,6 +168,7 @@ const AdminDashboard = () => {
       price: dropForm.price ? Number(dropForm.price) : 0,
       old_price: dropForm.old_price ? Number(dropForm.old_price) : "",
       is_enabled: dropForm.is_enabled,
+      region,
       csrf_token: csrf
     };
     await adminSaveFeaturedDrop(payload);
@@ -197,6 +200,14 @@ const AdminDashboard = () => {
           <p className="muted">Manage catalog and featured items.</p>
         </div>
         <div className="admin-actions">
+          <div className="nav" style={{ gap: "0.5rem" }}>
+            <button className={`btn btn-ghost ${region === "eu" ? "active" : ""}`} onClick={() => setRegion("eu")}>
+              EU products
+            </button>
+            <button className={`btn btn-ghost ${region === "ru" ? "active" : ""}`} onClick={() => setRegion("ru")}>
+              RU products
+            </button>
+          </div>
           {canEdit ? (
             <button className="btn btn-primary" onClick={() => openModal()}>
               New Product

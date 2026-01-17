@@ -2,10 +2,12 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useCart } from "../../context/CartContext";
 import { useUserSession } from "../../context/UserSessionContext";
+import { useI18n } from "../../i18n/I18nContext";
 
 const Header = () => {
   const { count } = useCart();
   const { authenticated, user, logout } = useUserSession();
+  const { lang, setLang, t } = useI18n();
   const [drawerOpen, setDrawerOpen] = useState(false);
   return (
     <>
@@ -16,13 +18,31 @@ const Header = () => {
             <span>Go Rust</span>
           </Link>
           <nav className="nav">
-            <Link to="/catalog">Catalog</Link>
-            <Link to="/support">Support</Link>
-            <Link to="/account">Account</Link>
+            <Link to="/catalog">{t("nav.catalog")}</Link>
+            <Link to="/support">{t("nav.support")}</Link>
+            <Link to="/account">{t("nav.account")}</Link>
           </nav>
           <div className="search">
             <span>🔍</span>
-            <input type="search" placeholder="Search items" aria-label="Search items" />
+            <input type="search" placeholder={t("nav.search")} aria-label={t("nav.search")} />
+          </div>
+          <div className="nav" style={{ gap: "0.4rem" }}>
+            <button
+              type="button"
+              className={`btn btn-ghost ${lang === "en" ? "active" : ""}`}
+              aria-label="Switch to English"
+              onClick={() => setLang("en")}
+            >
+              🇪🇺
+            </button>
+            <button
+              type="button"
+              className={`btn btn-ghost ${lang === "ru" ? "active" : ""}`}
+              aria-label="Переключить на русский"
+              onClick={() => setLang("ru")}
+            >
+              🇷🇺
+            </button>
           </div>
           <div className="nav">
             <Link className="cart-pill" to="/cart">
@@ -41,12 +61,12 @@ const Header = () => {
                   <span>{user?.nickname || "Account"}</span>
                 </Link>
                 <button className="btn btn-ghost" onClick={logout}>
-                  Sign out
+                  {t("nav.signOut")}
                 </button>
               </div>
             ) : (
               <a className="btn btn-secondary" href="/api/auth/steam-login.php">
-                Sign in with Steam
+                {t("nav.signIn")}
               </a>
             )}
           </div>
@@ -63,19 +83,19 @@ const Header = () => {
             <span>Go Rust</span>
           </div>
           <nav className="grid">
-            <Link to="/catalog">Catalog</Link>
-            <Link to="/support">Support</Link>
-            <Link to="/account">Account</Link>
-            <Link to="/cart">Cart</Link>
+            <Link to="/catalog">{t("nav.catalog")}</Link>
+            <Link to="/support">{t("nav.support")}</Link>
+            <Link to="/account">{t("nav.account")}</Link>
+            <Link to="/cart">{t("nav.cart")}</Link>
           </nav>
           <div style={{ marginTop: "2rem" }}>
             {authenticated ? (
               <button className="btn btn-secondary" style={{ width: "100%" }} onClick={logout}>
-                Sign out
+                {t("nav.signOut")}
               </button>
             ) : (
               <a className="btn btn-secondary" href="/api/auth/steam-login.php" style={{ width: "100%" }}>
-                Sign in with Steam
+                {t("nav.signIn")}
               </a>
             )}
           </div>

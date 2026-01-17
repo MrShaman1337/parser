@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useI18n } from "../i18n/I18nContext";
 
 const Checkout = () => {
   const { items, clear } = useCart();
   const [orderId, setOrderId] = useState("");
   const [successOpen, setSuccessOpen] = useState(false);
+  const { t } = useI18n();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -26,7 +28,7 @@ const Checkout = () => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      alert(data.error || "Order failed");
+      alert(data.error || t("checkout.failed"));
       return;
     }
     clear();
@@ -39,18 +41,18 @@ const Checkout = () => {
     <main className="section">
       <div className="container layout-2">
         <section>
-          <h1>Checkout</h1>
+          <h1>{t("checkout.title")}</h1>
           <form className="card" onSubmit={handleSubmit}>
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t("checkout.email")}</label>
             <input id="email" name="email" type="email" required />
-            <label htmlFor="nickname">Nickname / SteamID</label>
-            <input id="nickname" name="nickname" type="text" placeholder="Optional" />
-            <label htmlFor="server">Server</label>
-            <input id="server" name="server" type="text" required placeholder="EU Main #1" />
-            <label htmlFor="note">Order note</label>
-            <textarea id="note" name="note" rows={3} placeholder="Optional"></textarea>
+            <label htmlFor="nickname">{t("checkout.nickname")}</label>
+            <input id="nickname" name="nickname" type="text" placeholder={t("checkout.optional")} />
+            <label htmlFor="server">{t("checkout.server")}</label>
+            <input id="server" name="server" type="text" required placeholder={t("checkout.serverPlaceholder")} />
+            <label htmlFor="note">{t("checkout.note")}</label>
+            <textarea id="note" name="note" rows={3} placeholder={t("checkout.optional")}></textarea>
             <div style={{ marginTop: "1rem" }}>
-              <h3>Payment method</h3>
+              <h3>{t("checkout.payment")}</h3>
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
                 <label>
                   <input type="radio" name="payment" required /> Visa
@@ -67,16 +69,16 @@ const Checkout = () => {
               </div>
             </div>
             <button className="btn btn-primary" type="submit" style={{ marginTop: "1.5rem" }}>
-              Place order
+              {t("checkout.placeOrder")}
             </button>
           </form>
         </section>
 
         <aside className="card sticky">
-          <h3>Order summary</h3>
-          <p className="muted">Review your cart before placing the order.</p>
+          <h3>{t("checkout.summary")}</h3>
+          <p className="muted">{t("checkout.summaryDesc")}</p>
           <Link className="btn btn-secondary" to="/cart" style={{ width: "100%" }}>
-            Back to cart
+            {t("checkout.backToCart")}
           </Link>
         </aside>
       </div>
@@ -84,17 +86,17 @@ const Checkout = () => {
       <div className={`modal ${successOpen ? "open" : ""}`}>
         <div className="modal-panel">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3>Order confirmed</h3>
+            <h3>{t("checkout.confirmed")}</h3>
             <button className="btn btn-ghost" onClick={() => setSuccessOpen(false)}>
-              Close
+              {t("checkout.close")}
             </button>
           </div>
-          <p className="muted">Thanks for your order. Items will be delivered shortly.</p>
+          <p className="muted">{t("checkout.thanks")}</p>
           <p>
-            Order ID: <strong>{orderId}</strong>
+            {t("checkout.orderId")}: <strong>{orderId}</strong>
           </p>
           <Link className="btn btn-primary" to="/">
-            Return home
+            {t("checkout.returnHome")}
           </Link>
         </div>
       </div>

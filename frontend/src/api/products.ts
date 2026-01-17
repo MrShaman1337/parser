@@ -1,22 +1,23 @@
 import { Product } from "../types";
 
-let productsCache: Product[] | null = null;
-let productsPromise: Promise<Product[]> | null = null;
+const productsCache: Record<string, Product[] | undefined> = {};
+const productsPromise: Record<string, Promise<Product[]> | undefined> = {};
 
-export const fetchProducts = async (): Promise<Product[]> => {
-  if (productsCache) return productsCache;
-  if (productsPromise) return productsPromise;
-  productsPromise = fetch("/api/products.php", { cache: "no-store" })
+export const fetchProducts = async (region: "eu" | "ru" = "eu"): Promise<Product[]> => {
+  if (productsCache[region]) return productsCache[region]!;
+  if (productsPromise[region]) return productsPromise[region]!;
+  productsPromise[region] = fetch(`/api/products.php?region=${region}`, { cache: "no-store" })
     .then((res) => {
       if (!res.ok) throw new Error("Failed to load products");
       return res.json();
     })
     .then((data) => {
-      productsCache = data.products || [];
-      return productsCache;
+      const items = data.products || [];
+      productsCache[region] = items;
+      return items;
     })
     .finally(() => {
-      productsPromise = null;
+      productsPromise[region] = undefined;
     });
-  return productsPromise;
+  return productsPromise[region]!;
 };

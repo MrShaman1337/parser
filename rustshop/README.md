@@ -109,6 +109,23 @@ curl http://YOUR-IP:8080/admin/api/login.php
 - При первом запросе `/api/products.php` база автоматически заполняется из `/var/www/rustshop/public/data/products.json`
 - Сидинг идемпотентный: повторные запросы не создают дубликаты
 
+### Telegram для формы поддержки
+Добавьте в `/var/www/rustshop/server/env.php`:
+```php
+<?php
+return [
+    "steam_api_key" => "YOUR_STEAM_API_KEY",
+    "TELEGRAM_BOT_TOKEN" => "YOUR_BOT_TOKEN",
+    "TELEGRAM_CHAT_ID" => "YOUR_CHAT_ID"
+];
+```
+Проверка:
+```bash
+curl -X POST http://YOUR-IP:8080/api/support/send.php \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"test@example.com","orderId":"ORD-1","message":"Hello","lang":"en"}'
+```
+
 ## Ubuntu 24.04 Installation (Step-by-Step)
 
 ### 1) Install packages

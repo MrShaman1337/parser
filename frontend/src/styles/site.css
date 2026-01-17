@@ -384,6 +384,15 @@ a {
   text-shadow: 0 0 30px rgba(60, 162, 250, 0.45);
 }
 
+.hover-footer:hover .hover-footer__bg {
+  opacity: 0.9;
+  filter: hue-rotate(20deg) saturate(1.2);
+}
+
+.hover-footer:hover .hover-footer__outline {
+  text-shadow: 0 0 45px rgba(60, 162, 250, 0.6), 0 0 80px rgba(110, 231, 255, 0.35);
+}
+
 @keyframes hover-footer-glow {
   0% {
     opacity: 0.4;

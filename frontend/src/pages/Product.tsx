@@ -3,15 +3,17 @@ import { Link, useParams } from "react-router-dom";
 import { fetchProducts } from "../api/products";
 import { Product } from "../types";
 import { useCart } from "../context/CartContext";
+import { useI18n } from "../i18n/I18nContext";
 
 const ProductPage = () => {
   const { id } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
   const { addItem } = useCart();
+  const { t, region } = useI18n();
 
   useEffect(() => {
-    fetchProducts()
+    fetchProducts(region)
       .then((products) => {
         const active = products.filter((p) => p.is_active !== false);
         const current = active.find((p) => p.id === id);
@@ -21,13 +23,13 @@ const ProductPage = () => {
       .catch(() => {
         setProduct(null);
       });
-  }, [id]);
+  }, [id, region]);
 
   if (!product) {
     return (
       <main className="section">
         <div className="container">
-          <div className="card">Product not found.</div>
+          <div className="card">{t("product.notFound")}</div>
         </div>
       </main>
     );
@@ -38,9 +40,9 @@ const ProductPage = () => {
       <main className="section">
         <div className="container">
           <div className="breadcrumb">
-            <Link to="/">Home</Link>
+            <Link to="/">{t("common.home")}</Link>
             <span>›</span>
-            <Link to="/catalog">Catalog</Link>
+            <Link to="/catalog">{t("catalog.title")}</Link>
             <span>›</span>
             <span>{product.name || product.title}</span>
           </div>
@@ -60,12 +62,12 @@ const ProductPage = () => {
                     <h1>{product.name || product.title}</h1>
                     <p className="muted">{product.full_description || product.short_description}</p>
                     <div>
-                      {product.discount ? <span className="badge">Sale</span> : null}
+                      {product.discount ? <span className="badge">{t("product.sale")}</span> : null}
                       <span className="price">{product.priceFormatted}</span>
                       {product.compareAt ? <del>{product.compareAt}</del> : null}
                     </div>
                     <div>
-                      <label htmlFor="variant">Select variant</label>
+                      <label htmlFor="variant">{t("product.selectVariant")}</label>
                       <select id="variant">{(product.variants || []).map((variant) => <option key={variant}>{variant}</option>)}</select>
                     </div>
                   </div>
@@ -73,7 +75,7 @@ const ProductPage = () => {
               </div>
               <div className="grid" style={{ marginTop: "2rem" }}>
                 <div className="card">
-                  <h3>What you get</h3>
+                  <h3>{t("product.whatYouGet")}</h3>
                   <ul>
                     {(product.items || []).map((item) => (
                       <li key={item}>{item}</li>
@@ -81,27 +83,27 @@ const ProductPage = () => {
                   </ul>
                 </div>
                 <div className="card">
-                  <h3>Requirements</h3>
+                  <h3>{t("product.requirements")}</h3>
                   <p className="muted">{product.requirements}</p>
-                  <h3>Delivery</h3>
+                  <h3>{t("product.delivery")}</h3>
                   <p className="muted">{product.delivery}</p>
-                  <h3>Refunds</h3>
-                  <p className="muted">Refunds available within 24 hours for unused digital items.</p>
+                  <h3>{t("product.refunds")}</h3>
+                  <p className="muted">{t("product.refundPolicy")}</p>
                 </div>
               </div>
             </section>
             <aside className="card sticky">
-              <h3>Buy now</h3>
-              <p className="muted">Instant delivery to your Rust account.</p>
+              <h3>{t("product.buyNow")}</h3>
+              <p className="muted">{t("product.instantDelivery")}</p>
               <div className="price">{product.priceFormatted}</div>
               <button className="btn btn-primary" onClick={() => addItem(product, 1)}>
-                Add to cart
+                {t("home.addToCart")}
               </button>
               <Link className="btn btn-secondary" to="/checkout" style={{ marginTop: "0.5rem" }}>
-                Buy now
+                {t("product.buyNowBtn")}
               </Link>
               <div style={{ marginTop: "1rem" }}>
-                <p className="muted">Delivery method</p>
+                <p className="muted">{t("product.deliveryMethod")}</p>
                 <span className="chip">{product.delivery}</span>
               </div>
             </aside>
@@ -112,9 +114,9 @@ const ProductPage = () => {
       <section className="section">
         <div className="container">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <h2>Related items</h2>
+            <h2>{t("product.related")}</h2>
             <Link className="btn btn-ghost" to="/catalog">
-              View all
+              {t("home.viewAll")}
             </Link>
           </div>
           <div className="carousel">
@@ -124,7 +126,7 @@ const ProductPage = () => {
                 <h3>{item.name || item.title}</h3>
                 <div className="price">{item.priceFormatted}</div>
                 <button className="btn btn-secondary" onClick={() => addItem(item, 1)}>
-                  Add to cart
+                  {t("home.addToCart")}
                 </button>
               </article>
             ))}

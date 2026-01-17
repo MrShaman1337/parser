@@ -1,48 +1,49 @@
-import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
+import { Mail, MapPin, MessageCircle } from "lucide-react";
 import { FooterBackgroundGradient, TextHoverEffect } from "./ui/hover-footer";
 import { Link } from "react-router-dom";
+import { useI18n } from "../i18n/I18nContext";
 
 const HoverFooter = () => {
+  const { t } = useI18n();
   const footerLinks = [
     {
-      title: "Store",
+      title: t("footer.store"),
       links: [
-        { label: "Kits", href: "/catalog" },
-        { label: "VIP", href: "/catalog?tag=vip" },
-        { label: "Skins", href: "/catalog?tag=skins" },
-        { label: "FAQ", href: "/support" }
+        { label: t("home.category.kits"), href: "/catalog" },
+        { label: t("home.category.vip"), href: "/catalog?tag=vip" },
+        { label: t("home.category.skins"), href: "/catalog?tag=skins" },
+        { label: t("footer.faq"), href: "/support" }
       ]
     },
     {
-      title: "Support",
+      title: t("footer.support"),
       links: [
-        { label: "Help Center", href: "/support" },
-        { label: "Rules", href: "/support" },
-        { label: "Terms", href: "/support" },
-        { label: "Live Chat", href: "/support", pulse: true }
+        { label: t("footer.help"), href: "/support" },
+        { label: t("footer.rules"), href: "/support" },
+        { label: t("footer.terms"), href: "/support" },
+        { label: t("footer.discord"), href: "https://discord.gg/gorust", pulse: true }
       ]
     }
   ];
 
   const contactInfo = [
-    { icon: <Mail size={18} className="text-[#3ca2fa]" />, text: "support@gorust.store", href: "mailto:support@gorust.store" },
-    { icon: <Phone size={18} className="text-[#3ca2fa]" />, text: "+0 000 000 0000", href: "tel:+0000000000" },
-    { icon: <MapPin size={18} className="text-[#3ca2fa]" />, text: "EU Region" }
+    { icon: <Mail size={18} className="text-[#3ca2fa]" />, text: "support@gorust.shop", href: "mailto:support@gorust.shop" },
+    { icon: <MapPin size={18} className="text-[#3ca2fa]" />, text: "EU / RU" }
   ];
 
-  const socialLinks = [{ icon: <MessageCircle size={20} />, label: "Discord", href: "https://discord.gg/ATnZzTpR" }];
+  const socialLinks = [{ icon: <MessageCircle size={20} />, label: "Discord", href: "https://discord.gg/gorust" }];
 
   return (
-    <footer className="bg-[#0F0F11]/10 relative h-fit rounded-3xl overflow-hidden m-8">
+    <footer className="hover-footer bg-[#0F0F11]/10 relative h-fit rounded-3xl overflow-hidden m-8">
       <div className="max-w-7xl mx-auto p-14 z-40 relative text-gray-300">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 md:gap-8 lg:gap-16 pb-12">
           <div className="flex flex-col space-y-4">
             <div className="flex items-center space-x-2">
               <span className="text-[#3ca2fa] text-3xl font-extrabold">&hearts;</span>
-              <span className="text-white text-3xl font-bold">GO RUST</span>
+              <span className="text-white text-3xl font-bold">{t("common.brand")}</span>
             </div>
             <p className="text-sm leading-relaxed">
-              Premium Rust kits, VIP perks, and cosmetics delivered instantly.
+              {t("footer.desc")}
             </p>
           </div>
 
@@ -52,9 +53,15 @@ const HoverFooter = () => {
               <ul className="space-y-3">
                 {section.links.map((link) => (
                   <li key={link.label} className="relative">
-                    <Link to={link.href} className="hover:text-[#3ca2fa] transition-colors">
-                      {link.label}
-                    </Link>
+                    {link.href.startsWith("http") ? (
+                      <a href={link.href} target="_blank" rel="noreferrer" className="hover:text-[#3ca2fa] transition-colors">
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link to={link.href} className="hover:text-[#3ca2fa] transition-colors">
+                        {link.label}
+                      </Link>
+                    )}
                     {link.pulse && (
                       <span className="absolute top-0 right-[-10px] w-2 h-2 rounded-full bg-[#3ca2fa] animate-pulse"></span>
                     )}
@@ -65,7 +72,7 @@ const HoverFooter = () => {
           ))}
 
           <div>
-            <h4 className="text-white text-lg font-semibold mb-6">Contact Us</h4>
+            <h4 className="text-white text-lg font-semibold mb-6">{t("footer.contact")}</h4>
             <ul className="space-y-4">
               {contactInfo.map((item, i) => (
                 <li key={i} className="flex items-center space-x-3">
@@ -94,7 +101,9 @@ const HoverFooter = () => {
             ))}
           </div>
 
-          <p className="text-center md:text-left">&copy; {new Date().getFullYear()} GO RUST. All rights reserved.</p>
+          <p className="text-center md:text-left">
+            &copy; {new Date().getFullYear()} {t("common.brand")}. {t("footer.rights")}
+          </p>
         </div>
       </div>
 

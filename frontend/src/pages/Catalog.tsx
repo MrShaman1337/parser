@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { fetchProducts } from "../api/products";
 import { Product } from "../types";
 import { useCart } from "../context/CartContext";
+import { useI18n } from "../i18n/I18nContext";
 
 const Catalog = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -12,10 +13,11 @@ const Catalog = () => {
   const [tag, setTag] = useState("");
   const [sort, setSort] = useState("popular");
   const { addItem } = useCart();
+  const { t, region } = useI18n();
 
   useEffect(() => {
-    fetchProducts().then(setProducts).catch(() => setProducts([]));
-  }, []);
+    fetchProducts(region).then(setProducts).catch(() => setProducts([]));
+  }, [region]);
 
   const filtered = useMemo(() => {
     let list = products.filter((p) => p.is_active !== false);
@@ -33,31 +35,33 @@ const Catalog = () => {
     <main className="section">
       <div className="container">
         <div className="breadcrumb">
-          <Link to="/">Home</Link>
+          <Link to="/">{t("common.home")}</Link>
           <span>›</span>
-          <span>Catalog</span>
+          <span>{t("catalog.title")}</span>
         </div>
-        <h1>Catalog</h1>
+        <h1>{t("catalog.title")}</h1>
         <div className="filters" style={{ margin: "1.5rem 0" }}>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} type="search" placeholder="Search in catalog" />
-          <input value={min} onChange={(e) => setMin(e.target.value)} type="number" placeholder="Min price" />
-          <input value={max} onChange={(e) => setMax(e.target.value)} type="number" placeholder="Max price" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} type="search" placeholder={t("catalog.search")} />
+          <input value={min} onChange={(e) => setMin(e.target.value)} type="number" placeholder={t("catalog.minPrice")} />
+          <input value={max} onChange={(e) => setMax(e.target.value)} type="number" placeholder={t("catalog.maxPrice")} />
           <select value={tag} onChange={(e) => setTag(e.target.value)}>
-            <option value="">All tags</option>
-            <option value="kits">Kits</option>
-            <option value="vip">VIP</option>
-            <option value="skins">Skins</option>
-            <option value="currency">Currency</option>
-            <option value="resources">Resources</option>
+            <option value="">{t("catalog.allTags")}</option>
+            <option value="kits">{t("home.category.kits")}</option>
+            <option value="vip">{t("home.category.vip")}</option>
+            <option value="skins">{t("home.category.skins")}</option>
+            <option value="currency">{t("home.category.currency")}</option>
+            <option value="resources">{t("home.category.resources")}</option>
           </select>
           <select value={sort} onChange={(e) => setSort(e.target.value)}>
-            <option value="popular">Sort: Popular</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
+            <option value="popular">{t("catalog.sort.popular")}</option>
+            <option value="price-asc">{t("catalog.sort.priceAsc")}</option>
+            <option value="price-desc">{t("catalog.sort.priceDesc")}</option>
           </select>
         </div>
         <div className="product-grid">
-          {filtered.length === 0 && <div className="card">No products found.</div>}
+          {filtered.length === 0 && (
+            <div className="card">{region === "ru" ? t("catalog.emptyRu") : t("catalog.none")}</div>
+          )}
           {filtered.map((product) => (
             <article className="product-card" key={product.id}>
               <div style={{ position: "relative" }}>
@@ -73,10 +77,10 @@ const Catalog = () => {
               </div>
               <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
                 <Link className="btn btn-secondary" to={`/product/${product.id}`}>
-                  View
+                  {t("home.view")}
                 </Link>
                 <button className="btn btn-primary" onClick={() => addItem(product, 1)}>
-                  Add to cart
+                  {t("home.addToCart")}
                 </button>
               </div>
             </article>

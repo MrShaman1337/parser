@@ -7,19 +7,20 @@ export const adminLogin = (username: string, password: string, csrfToken: string
   apiFetch(`/admin/api/login.php`, { method: "POST", body: { username, password, csrf_token: csrfToken } });
 export const adminLogout = () => apiFetch(`/admin/api/logout.php`);
 
-export const adminProducts = () => apiFetch<{ products: Product[] }>(`/admin/api/products.php?include_inactive=true`);
+export const adminProducts = (region: "eu" | "ru") =>
+  apiFetch<{ products: Product[] }>(`/admin/api/products.php?include_inactive=true&region=${region}`);
 export const adminSaveProduct = (payload: Record<string, unknown>) => {
   const hasId = typeof payload.id === "string" && payload.id.length > 0;
   const endpoint = hasId ? "/admin/api/product-update.php" : "/admin/api/product-create.php";
   return apiFetch<{ ok: boolean; product: Product }>(endpoint, { method: "POST", body: payload });
 };
-export const adminDeleteProduct = (id: string, csrfToken: string) =>
-  apiFetch(`/admin/api/product-delete.php`, { method: "POST", body: { id, csrf_token: csrfToken } });
-export const adminSaveFeatured = (featured: string[], csrfToken: string) =>
-  apiFetch(`/admin/api/featured-save.php`, { method: "POST", body: { featured, csrf_token: csrfToken } });
+export const adminDeleteProduct = (id: string, csrfToken: string, region: "eu" | "ru") =>
+  apiFetch(`/admin/api/product-delete.php`, { method: "POST", body: { id, region, csrf_token: csrfToken } });
+export const adminSaveFeatured = (featured: string[], csrfToken: string, region: "eu" | "ru") =>
+  apiFetch(`/admin/api/featured-save.php`, { method: "POST", body: { featured, region, csrf_token: csrfToken } });
 
-export const adminFeaturedDrop = () =>
-  apiFetch<{ featured_drop: any }>(`/admin/api/featured-drop.php`);
+export const adminFeaturedDrop = (region: "eu" | "ru") =>
+  apiFetch<{ featured_drop: any }>(`/admin/api/featured-drop.php?region=${region}`);
 export const adminSaveFeaturedDrop = (payload: Record<string, unknown>) =>
   apiFetch<{ ok: boolean; featured_drop: any }>(`/admin/api/featured-drop.php`, { method: "POST", body: payload });
 

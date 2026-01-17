@@ -21,6 +21,7 @@ $requiredFiles = [
     __DIR__ . "/../public/api/stats.php",
     __DIR__ . "/../public/api/featured-drop.php",
     __DIR__ . "/../public/api/products.php",
+    __DIR__ . "/../public/api/support/send.php",
     __DIR__ . "/../public/api/order-create.php",
     __DIR__ . "/../public/admin/api/login.php",
     __DIR__ . "/../public/admin/api/session.php",

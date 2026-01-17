@@ -4,16 +4,18 @@ import { fetchProducts } from "../api/products";
 import { FeaturedDrop, Product } from "../types";
 import { useCart } from "../context/CartContext";
 import { fetchFeaturedDrop, fetchStats } from "../api/site";
+import { useI18n } from "../i18n/I18nContext";
 
 const Home = () => {
   const [featured, setFeatured] = useState<Product[]>([]);
   const { addItem } = useCart();
   const [stats, setStats] = useState({ orders_delivered: 214, active_players: 23 });
   const [featuredDrop, setFeaturedDrop] = useState<FeaturedDrop | null>(null);
+  const { t, region } = useI18n();
 
   useEffect(() => {
     const load = async () => {
-      const products = await fetchProducts();
+      const products = await fetchProducts(region);
       const active = products.filter((p) => p.is_active !== false);
       const featuredList = active
         .filter((p) => p.is_featured)
@@ -22,41 +24,39 @@ const Home = () => {
     };
     load().catch(() => setFeatured([]));
     fetchStats().then(setStats).catch(() => setStats({ orders_delivered: 214, active_players: 23 }));
-    fetchFeaturedDrop()
+    fetchFeaturedDrop(region)
       .then((data) => setFeaturedDrop(data.featured_drop))
       .catch(() => setFeaturedDrop(null));
-  }, []);
+  }, [region]);
 
   return (
     <main>
       <section className="hero">
         <div className="container hero-grid">
           <div>
-            <div className="badge">Official Rust Marketplace</div>
-            <h1>Gear up fast. Dominate the wipe.</h1>
-            <p className="muted">
-              Premium Rust kits, skins, and VIP perks delivered instantly. Secure checkout, real-time stock, elite rewards.
-            </p>
+            <div className="badge">{t("home.badge")}</div>
+            <h1>{t("home.title")}</h1>
+            <p className="muted">{t("home.subtitle")}</p>
             <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
               <Link className="btn btn-primary" to="/catalog">
-                Shop Now
+                {t("home.shopNow")}
               </Link>
               <Link className="btn btn-secondary" to="/account">
-                Sign In
+                {t("home.signIn")}
               </Link>
             </div>
             <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", marginTop: "2rem" }}>
               <div>
                 <strong>{stats.orders_delivered}</strong>
-                <div className="muted">Orders delivered</div>
+                <div className="muted">{t("home.stats.orders")}</div>
               </div>
               <div>
                 <strong>{stats.active_players}</strong>
-                <div className="muted">Active players</div>
+                <div className="muted">{t("home.stats.active")}</div>
               </div>
               <div>
                 <strong>99.98%</strong>
-                <div className="muted">Server uptime</div>
+                <div className="muted">{t("home.stats.uptime")}</div>
               </div>
             </div>
           </div>
@@ -85,9 +85,9 @@ const Home = () => {
       <section className="section">
         <div className="container">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-            <h2>Featured</h2>
+            <h2>{t("home.featured")}</h2>
             <Link className="btn btn-ghost" to="/catalog">
-              View all
+              {t("home.viewAll")}
             </Link>
           </div>
           <div className="product-grid">
@@ -113,10 +113,10 @@ const Home = () => {
                 </div>
                 <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
                   <Link className="btn btn-secondary" to={`/product/${product.id}`}>
-                    View
+                    {t("home.view")}
                   </Link>
                   <button className="btn btn-primary" onClick={() => addItem(product, 1)}>
-                    Add to cart
+                    {t("home.addToCart")}
                   </button>
                 </div>
               </article>
@@ -127,22 +127,22 @@ const Home = () => {
 
       <section className="section">
         <div className="container">
-          <h2>Shop by category</h2>
+          <h2>{t("home.categories")}</h2>
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", marginTop: "1.5rem" }}>
             <Link className="card" to="/catalog#kits">
-              Kits
+              {t("home.category.kits")}
             </Link>
             <Link className="card" to="/catalog#vip">
-              VIP
+              {t("home.category.vip")}
             </Link>
             <Link className="card" to="/catalog#skins">
-              Skins
+              {t("home.category.skins")}
             </Link>
             <Link className="card" to="/catalog#currency">
-              Currency
+              {t("home.category.currency")}
             </Link>
             <Link className="card" to="/catalog#resources">
-              Resources
+              {t("home.category.resources")}
             </Link>
           </div>
         </div>
@@ -150,19 +150,19 @@ const Home = () => {
 
       <section className="section">
         <div className="container">
-          <h2>How it works</h2>
+          <h2>{t("home.howItWorks")}</h2>
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", marginTop: "1.5rem" }}>
             <div className="card">
-              <h3>1. Connect</h3>
-              <p className="muted">Sign in with your account and verify your Rust profile.</p>
+              <h3>{t("home.step1.title")}</h3>
+              <p className="muted">{t("home.step1.desc")}</p>
             </div>
             <div className="card">
-              <h3>2. Choose</h3>
-              <p className="muted">Select kits, skins, or VIP perks tailored to your playstyle.</p>
+              <h3>{t("home.step2.title")}</h3>
+              <p className="muted">{t("home.step2.desc")}</p>
             </div>
             <div className="card">
-              <h3>3. Receive</h3>
-              <p className="muted">Instant delivery in-game with real-time order tracking.</p>
+              <h3>{t("home.step3.title")}</h3>
+              <p className="muted">{t("home.step3.desc")}</p>
             </div>
           </div>
         </div>
@@ -173,11 +173,11 @@ const Home = () => {
           <div className="card">
             <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", alignItems: "center" }}>
               <div>
-                <h3>Trusted by the Rust community</h3>
-                <p className="muted">Secure payments, instant delivery, and 24/7 support.</p>
+                <h3>{t("home.trusted.title")}</h3>
+                <p className="muted">{t("home.trusted.desc")}</p>
               </div>
               <div>
-                <p className="muted">Payment Partners</p>
+                <p className="muted">{t("home.payment")}</p>
                 <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
                   <span className="chip">Visa</span>
                   <span className="chip">Mastercard</span>
@@ -186,8 +186,8 @@ const Home = () => {
                 </div>
               </div>
               <div>
-                <p className="muted">Community Rating</p>
-                <strong>4.9/5</strong> from 3,200 reviews
+                <p className="muted">{t("home.rating")}</p>
+                <strong>4.9/5</strong> {t("home.ratingNote")}
               </div>
             </div>
           </div>

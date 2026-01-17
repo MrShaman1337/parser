@@ -6,12 +6,13 @@ start_session();
 rate_limit("steam_callback", 10, 60);
 
 $redirectBase = "/account";
-$redirectWithError = function (string $message): void use ($redirectBase) {
+function redirect_with_error($redirectBase, $message): void
+{
     error_log("steam_callback: " . $message);
     $target = $redirectBase . "?auth_error=" . urlencode($message);
     header("Location: " . $target);
     exit;
-};
+}
 
 if (($_GET["openid_mode"] ?? "") === "cancel") {
     header("Location: " . $redirectBase);
@@ -27,7 +28,7 @@ foreach ($_GET as $key => $value) {
 }
 
 if (empty($openidParams["openid.sig"])) {
-    $redirectWithError("Invalid OpenID response");
+    redirect_with_error($redirectBase, "Invalid OpenID response");
 }
 
 $openidParams["openid.mode"] = "check_authentication";
@@ -42,24 +43,24 @@ $context = stream_context_create([
 ]);
 $raw = @file_get_contents(steam_openid_endpoint(), false, $context);
 if ($raw === false || strpos($raw, "is_valid:true") === false) {
-    $redirectWithError("OpenID validation failed");
+    redirect_with_error($redirectBase, "OpenID validation failed");
 }
 
 $claimed = $_GET["openid_claimed_id"] ?? "";
 if (!preg_match("#^https?://steamcommunity\\.com/openid/id/(\\d+)$#", $claimed, $matches)) {
-    $redirectWithError("Invalid Steam ID");
+    redirect_with_error($redirectBase, "Invalid Steam ID");
 }
 $steamId = $matches[1];
 
 $existing = get_user_by_steam_id($steamId);
 if ($existing && !empty($existing["is_banned"])) {
-    $redirectWithError("User is banned");
+    redirect_with_error($redirectBase, "User is banned");
 }
 
 try {
     $profile = fetch_steam_profile($steamId);
 } catch (Throwable $e) {
-    $redirectWithError($e->getMessage());
+    redirect_with_error($redirectBase, $e->getMessage());
 }
 
 $user = upsert_user($steamId, $profile);

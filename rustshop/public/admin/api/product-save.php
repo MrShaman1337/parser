@@ -9,6 +9,7 @@ rate_limit("product_save", 20, 60);
 $data = read_input();
 validate_csrf($data["csrf_token"] ?? null);
 
+$data["region"] = sanitize_text($data["region"] ?? "eu") ?: "eu";
 $id = sanitize_text($data["id"] ?? "");
 $product = $id ? upsert_product($data, $id) : upsert_product($data);
 
