@@ -4,7 +4,7 @@ require_once dirname(__DIR__, 3) . "/server/helpers.php";
 
 require_login(true);
 require_admin_role(["admin", "superadmin"]);
-rate_limit("product_delete", 10, 60);
+rate_limit("product_update", 20, 60);
 
 $data = read_input();
 validate_csrf($data["csrf_token"] ?? null);
@@ -14,8 +14,5 @@ if (!$id) {
     json_response(["error" => "Missing id"], 400);
 }
 
-$deleted = delete_product($id, true);
-if (!$deleted) {
-    json_response(["error" => "Not found"], 404);
-}
-json_response(["ok" => true]);
+$product = upsert_product($data, $id);
+json_response(["ok" => true, "product" => $product]);

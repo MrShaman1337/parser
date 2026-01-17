@@ -16,21 +16,23 @@ if (!is_array($items) || count($items) === 0) {
     json_response(["error" => "Cart is empty"], 400);
 }
 
-$products = load_products();
 $map = [];
-foreach ($products as $product) {
-    $map[$product["id"]] = $product;
-}
 
 $sanitizedItems = [];
 $subtotal = 0.0;
 foreach ($items as $item) {
     $id = sanitize_text($item["id"] ?? "");
     $qty = intval($item["qty"] ?? 0);
-    if (!$id || $qty < 1 || !isset($map[$id])) {
+    if (!$id || $qty < 1) {
         json_response(["error" => "Invalid cart item"], 400);
     }
+    if (!isset($map[$id])) {
+        $map[$id] = get_product_by_id($id);
+    }
     $product = $map[$id];
+    if (!$product) {
+        json_response(["error" => "Invalid cart item"], 400);
+    }
     if (($product["is_active"] ?? true) === false) {
         json_response(["error" => "Item not available"], 400);
     }

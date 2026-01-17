@@ -104,6 +104,11 @@ curl -I http://YOUR-IP:8080/api/auth/steam-login.php
 curl http://YOUR-IP:8080/admin/api/login.php
 ```
 
+### Продукты (SQLite)
+- Источник данных теперь SQLite: `/var/www/rustshop/server/data/store.sqlite`
+- При первом запросе `/api/products.php` база автоматически заполняется из `/var/www/rustshop/public/data/products.json`
+- Сидинг идемпотентный: повторные запросы не создают дубликаты
+
 ## Ubuntu 24.04 Installation (Step-by-Step)
 
 ### 1) Install packages

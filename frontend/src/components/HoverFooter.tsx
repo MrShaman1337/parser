@@ -1,4 +1,3 @@
-import React from "react";
 import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
 import { FooterBackgroundGradient, TextHoverEffect } from "./ui/hover-footer";
 import { Link } from "react-router-dom";

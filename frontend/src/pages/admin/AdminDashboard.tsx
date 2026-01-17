@@ -21,6 +21,8 @@ const emptyProduct: Partial<Product> = {
   short_description: "",
   full_description: "",
   perks: "",
+  requirements: "",
+  delivery: "",
   image: "assets/img/placeholder.svg",
   gallery: [],
   variants: [],
@@ -434,6 +436,14 @@ const AdminDashboard = () => {
               <div className="admin-form-wide">
                 <label>Perks</label>
                 <input value={form.perks || ""} onChange={(e) => setForm({ ...form, perks: e.target.value })} />
+              </div>
+              <div className="admin-form-wide">
+                <label>Requirements</label>
+                <input value={form.requirements || ""} onChange={(e) => setForm({ ...form, requirements: e.target.value })} />
+              </div>
+              <div className="admin-form-wide">
+                <label>Delivery</label>
+                <input value={form.delivery || ""} onChange={(e) => setForm({ ...form, delivery: e.target.value })} />
               </div>
               <div className="admin-form-wide">
                 <label>Image URL</label>

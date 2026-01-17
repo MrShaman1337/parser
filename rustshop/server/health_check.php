@@ -20,6 +20,7 @@ $requiredFiles = [
     __DIR__ . "/../public/api/auth/logout.php",
     __DIR__ . "/../public/api/stats.php",
     __DIR__ . "/../public/api/featured-drop.php",
+    __DIR__ . "/../public/api/products.php",
     __DIR__ . "/../public/api/order-create.php",
     __DIR__ . "/../public/admin/api/login.php",
     __DIR__ . "/../public/admin/api/session.php",
@@ -51,7 +52,7 @@ $checks["store_db"]["file_writable"] = is_writable($checks["store_db"]["path"]);
 try {
     init_db();
     $pdo = db();
-    $tables = ["orders", "site_stats", "featured_drop"];
+$tables = ["orders", "site_stats", "featured_drop", "products"];
     foreach ($tables as $table) {
         $checks["store_db"]["tables"][$table] = table_exists($pdo, $table);
         if (!$checks["store_db"]["tables"][$table]) {

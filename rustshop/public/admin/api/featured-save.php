@@ -17,22 +17,5 @@ if (!is_array($order)) {
 $limit = config()["featured_limit"] ?? 8;
 $order = array_slice(array_values(array_filter($order, "strlen")), 0, $limit);
 
-$products = load_products();
-$orderMap = [];
-foreach ($order as $idx => $id) {
-    $orderMap[$id] = $idx + 1;
-}
-
-foreach ($products as $idx => $product) {
-    $id = $product["id"] ?? "";
-    if (isset($orderMap[$id])) {
-        $products[$idx]["is_featured"] = true;
-        $products[$idx]["featured_order"] = $orderMap[$id];
-    } else {
-        $products[$idx]["is_featured"] = false;
-        $products[$idx]["featured_order"] = 0;
-    }
-}
-
-save_products($products);
+update_featured_order($order, $limit);
 json_response(["ok" => true]);

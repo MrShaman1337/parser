@@ -25,13 +25,7 @@ $oldPrice = isset($data["old_price"]) && $data["old_price"] !== "" ? floatval($d
 
 $product = null;
 if ($productId) {
-    $products = load_products();
-    foreach ($products as $item) {
-        if (($item["id"] ?? "") === $productId) {
-            $product = $item;
-            break;
-        }
-    }
+    $product = get_product_by_id($productId);
 }
 
 if ($isEnabled) {

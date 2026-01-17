@@ -603,44 +603,441 @@ function fetch_steam_profile(string $steamId): array
     ];
 }
 
-function load_products(): array
+function ensure_products_table(): void
+{
+    $pdo = db();
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS products (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            title TEXT,
+            perks TEXT,
+            short_description TEXT,
+            full_description TEXT,
+            price REAL NOT NULL DEFAULT 0,
+            compare_at TEXT,
+            discount INTEGER DEFAULT 0,
+            image TEXT,
+            gallery_json TEXT,
+            items_json TEXT,
+            requirements TEXT,
+            delivery TEXT,
+            category TEXT,
+            tags_json TEXT,
+            variants_json TEXT,
+            popularity INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            is_featured INTEGER DEFAULT 0,
+            featured_order INTEGER DEFAULT 0,
+            created_at TEXT,
+            updated_at TEXT
+        );
+    ");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS products_category_idx ON products(category);");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS products_featured_idx ON products(is_featured);");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS products_active_idx ON products(is_active);");
+}
+
+function seed_products_from_json(): void
 {
     $path = products_path();
     if (!file_exists($path)) {
-        return [];
+        return;
     }
-    $handle = fopen($path, "r");
-    if (!$handle) {
-        return [];
+    $raw = file_get_contents($path);
+    $data = json_decode($raw ?: "", true);
+    if (!is_array($data) || count($data) === 0) {
+        return;
     }
-    flock($handle, LOCK_SH);
-    $contents = stream_get_contents($handle);
-    flock($handle, LOCK_UN);
-    fclose($handle);
-    $data = json_decode($contents, true);
-    return is_array($data) ? $data : [];
+    $pdo = db();
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare("
+        INSERT OR IGNORE INTO products (
+            id, name, title, perks, short_description, full_description, price, compare_at, discount, image,
+            gallery_json, items_json, requirements, delivery, category, tags_json, variants_json, popularity,
+            is_active, is_featured, featured_order, created_at, updated_at
+        )
+        VALUES (
+            :id, :name, :title, :perks, :short_description, :full_description, :price, :compare_at, :discount, :image,
+            :gallery_json, :items_json, :requirements, :delivery, :category, :tags_json, :variants_json, :popularity,
+            :is_active, :is_featured, :featured_order, :created_at, :updated_at
+        )
+    ");
+    foreach ($data as $item) {
+        if (!is_array($item) || empty($item["id"])) {
+            continue;
+        }
+        $now = date("c");
+        $stmt->execute([
+            "id" => sanitize_text($item["id"] ?? ""),
+            "name" => sanitize_text($item["name"] ?? ""),
+            "title" => sanitize_text($item["title"] ?? ""),
+            "perks" => sanitize_text($item["perks"] ?? ""),
+            "short_description" => sanitize_text($item["short_description"] ?? ""),
+            "full_description" => sanitize_text($item["full_description"] ?? ""),
+            "price" => floatval($item["price"] ?? 0),
+            "compare_at" => sanitize_text($item["compareAt"] ?? $item["old_price"] ?? ""),
+            "discount" => intval($item["discount"] ?? 0),
+            "image" => sanitize_text($item["image"] ?? ""),
+            "gallery_json" => json_encode($item["gallery"] ?? []),
+            "items_json" => json_encode($item["items"] ?? []),
+            "requirements" => sanitize_text($item["requirements"] ?? ""),
+            "delivery" => sanitize_text($item["delivery"] ?? ""),
+            "category" => sanitize_text($item["category"] ?? ""),
+            "tags_json" => json_encode($item["tags"] ?? []),
+            "variants_json" => json_encode($item["variants"] ?? []),
+            "popularity" => intval($item["popularity"] ?? 0),
+            "is_active" => !empty($item["is_active"]) ? 1 : 0,
+            "is_featured" => !empty($item["is_featured"]) ? 1 : 0,
+            "featured_order" => intval($item["featured_order"] ?? 0),
+            "created_at" => $item["created_at"] ?? date("Y-m-d"),
+            "updated_at" => $now
+    ]);
+}
+
+function get_product_by_id(string $id): ?array
+{
+    ensure_products_seeded();
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = :id LIMIT 1");
+    $stmt->execute([":id" => $id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ? product_row_to_array($row) : null;
+}
+
+function list_products(array $filters = [], int $limit = 100, int $offset = 0): array
+{
+    ensure_products_seeded();
+    $pdo = db();
+    $where = [];
+    $params = [];
+    if (!empty($filters["q"])) {
+        $where[] = "(LOWER(name) LIKE :q OR LOWER(title) LIKE :q)";
+        $params[":q"] = "%" . strtolower($filters["q"]) . "%";
+    }
+    if (!empty($filters["category"])) {
+        $where[] = "category = :category";
+        $params[":category"] = $filters["category"];
+    }
+    if (isset($filters["featured"]) && $filters["featured"] !== "") {
+        $where[] = "is_featured = :featured";
+        $params[":featured"] = $filters["featured"] ? 1 : 0;
+    }
+    if (isset($filters["active"]) && $filters["active"] !== "") {
+        $where[] = "is_active = :active";
+        $params[":active"] = $filters["active"] ? 1 : 0;
+    }
+
+    $sql = "SELECT * FROM products";
+    if ($where) {
+        $sql .= " WHERE " . implode(" AND ", $where);
+    }
+    $sort = $filters["sort"] ?? "name";
+    if ($sort === "price") {
+        $sql .= " ORDER BY price ASC";
+    } elseif ($sort === "price_desc") {
+        $sql .= " ORDER BY price DESC";
+    } elseif ($sort === "date") {
+        $sql .= " ORDER BY created_at DESC";
+    } elseif ($sort === "popularity") {
+        $sql .= " ORDER BY popularity DESC";
+    } else {
+        $sql .= " ORDER BY name ASC";
+    }
+    $sql .= " LIMIT :limit OFFSET :offset";
+    $stmt = $pdo->prepare($sql);
+    foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value);
+    }
+    $stmt->bindValue(":limit", $limit, PDO::PARAM_INT);
+    $stmt->bindValue(":offset", $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return array_map("product_row_to_array", $rows);
+}
+
+function count_products(array $filters = []): int
+{
+    ensure_products_seeded();
+    $pdo = db();
+    $where = [];
+    $params = [];
+    if (!empty($filters["q"])) {
+        $where[] = "(LOWER(name) LIKE :q OR LOWER(title) LIKE :q)";
+        $params[":q"] = "%" . strtolower($filters["q"]) . "%";
+    }
+    if (!empty($filters["category"])) {
+        $where[] = "category = :category";
+        $params[":category"] = $filters["category"];
+    }
+    if (isset($filters["featured"]) && $filters["featured"] !== "") {
+        $where[] = "is_featured = :featured";
+        $params[":featured"] = $filters["featured"] ? 1 : 0;
+    }
+    if (isset($filters["active"]) && $filters["active"] !== "") {
+        $where[] = "is_active = :active";
+        $params[":active"] = $filters["active"] ? 1 : 0;
+    }
+    $sql = "SELECT COUNT(*) FROM products";
+    if ($where) {
+        $sql .= " WHERE " . implode(" AND ", $where);
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return (int)$stmt->fetchColumn();
+}
+
+function ensure_unique_product_id(string $baseId): string
+{
+    $baseId = slugify($baseId);
+    $pdo = db();
+    $candidate = $baseId;
+    $suffix = 1;
+    while (true) {
+        $stmt = $pdo->prepare("SELECT id FROM products WHERE id = :id LIMIT 1");
+        $stmt->execute([":id" => $candidate]);
+        if (!$stmt->fetchColumn()) {
+            return $candidate;
+        }
+        $suffix += 1;
+        $candidate = $baseId . "-" . $suffix;
+    }
+}
+
+function upsert_product(array $input, ?string $id = null): array
+{
+    ensure_products_seeded();
+    $pdo = db();
+    $existing = $id ? get_product_by_id($id) : null;
+    $normalized = normalize_product($input, $existing ?? []);
+    $productId = $id ?: ($normalized["id"] ?? "");
+    if (!$productId) {
+        $productId = ensure_unique_product_id($normalized["name"] ?? "item");
+    }
+    $now = date("c");
+    $stmt = $pdo->prepare("
+        INSERT INTO products (
+            id, name, title, perks, short_description, full_description, price, compare_at, discount, image,
+            gallery_json, items_json, requirements, delivery, category, tags_json, variants_json, popularity,
+            is_active, is_featured, featured_order, created_at, updated_at
+        ) VALUES (
+            :id, :name, :title, :perks, :short_description, :full_description, :price, :compare_at, :discount, :image,
+            :gallery_json, :items_json, :requirements, :delivery, :category, :tags_json, :variants_json, :popularity,
+            :is_active, :is_featured, :featured_order, :created_at, :updated_at
+        )
+        ON CONFLICT(id) DO UPDATE SET
+            name = excluded.name,
+            title = excluded.title,
+            perks = excluded.perks,
+            short_description = excluded.short_description,
+            full_description = excluded.full_description,
+            price = excluded.price,
+            compare_at = excluded.compare_at,
+            discount = excluded.discount,
+            image = excluded.image,
+            gallery_json = excluded.gallery_json,
+            items_json = excluded.items_json,
+            requirements = excluded.requirements,
+            delivery = excluded.delivery,
+            category = excluded.category,
+            tags_json = excluded.tags_json,
+            variants_json = excluded.variants_json,
+            popularity = excluded.popularity,
+            is_active = excluded.is_active,
+            is_featured = excluded.is_featured,
+            featured_order = excluded.featured_order,
+            updated_at = excluded.updated_at
+    ");
+    $stmt->execute([
+        "id" => $productId,
+        "name" => sanitize_text($normalized["name"] ?? ""),
+        "title" => sanitize_text($normalized["title"] ?? ""),
+        "perks" => sanitize_text($normalized["perks"] ?? ""),
+        "short_description" => sanitize_text($normalized["short_description"] ?? ""),
+        "full_description" => sanitize_text($normalized["full_description"] ?? ""),
+        "price" => floatval($normalized["price"] ?? 0),
+        "compare_at" => sanitize_text($normalized["compareAt"] ?? ""),
+        "discount" => intval($normalized["discount"] ?? 0),
+        "image" => sanitize_text($normalized["image"] ?? ""),
+        "gallery_json" => json_encode($normalized["gallery"] ?? []),
+        "items_json" => json_encode($normalized["items"] ?? []),
+        "requirements" => sanitize_text($normalized["requirements"] ?? ""),
+        "delivery" => sanitize_text($normalized["delivery"] ?? ""),
+        "category" => sanitize_text($normalized["category"] ?? ""),
+        "tags_json" => json_encode($normalized["tags"] ?? []),
+        "variants_json" => json_encode($normalized["variants"] ?? []),
+        "popularity" => intval($normalized["popularity"] ?? 0),
+        "is_active" => !empty($normalized["is_active"]) ? 1 : 0,
+        "is_featured" => !empty($normalized["is_featured"]) ? 1 : 0,
+        "featured_order" => intval($normalized["featured_order"] ?? 0),
+        "created_at" => $normalized["created_at"] ?? date("Y-m-d"),
+        "updated_at" => $now
+    ]);
+    return get_product_by_id($productId) ?: array_merge($normalized, ["id" => $productId]);
+}
+
+function delete_product(string $id, bool $soft = true): bool
+{
+    ensure_products_seeded();
+    $pdo = db();
+    if ($soft) {
+        $stmt = $pdo->prepare("UPDATE products SET is_active = 0, updated_at = :updated_at WHERE id = :id");
+        $stmt->execute([":updated_at" => date("c"), ":id" => $id]);
+        return $stmt->rowCount() > 0;
+    }
+    $stmt = $pdo->prepare("DELETE FROM products WHERE id = :id");
+    $stmt->execute([":id" => $id]);
+    return $stmt->rowCount() > 0;
+}
+
+function update_featured_order(array $ids, int $limit): void
+{
+    ensure_products_seeded();
+    $pdo = db();
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare("UPDATE products SET is_featured = 0, featured_order = 0 WHERE is_featured = 1");
+    $stmt->execute();
+    $stmt = $pdo->prepare("UPDATE products SET is_featured = 1, featured_order = :order, updated_at = :updated_at WHERE id = :id");
+    $order = 1;
+    foreach ($ids as $id) {
+        if ($order > $limit) {
+            break;
+        }
+        $stmt->execute([
+            ":order" => $order,
+            ":updated_at" => date("c"),
+            ":id" => $id
+        ]);
+        $order += 1;
+    }
+    $pdo->commit();
+}
+    $pdo->commit();
+}
+
+function ensure_products_seeded(): void
+{
+    ensure_products_table();
+    $pdo = db();
+    $count = (int)$pdo->query("SELECT COUNT(*) FROM products")->fetchColumn();
+    if ($count === 0) {
+        seed_products_from_json();
+    }
+}
+
+function product_row_to_array(array $row): array
+{
+    $config = config();
+    $currency = $config["currency_symbol"] ?? "$";
+    $price = floatval($row["price"] ?? 0);
+    return [
+        "id" => $row["id"],
+        "name" => $row["name"] ?: null,
+        "title" => $row["title"] ?: null,
+        "perks" => $row["perks"] ?: null,
+        "short_description" => $row["short_description"] ?: null,
+        "full_description" => $row["full_description"] ?: null,
+        "price" => $price,
+        "priceFormatted" => $currency . number_format($price, 2),
+        "compareAt" => $row["compare_at"] ?: null,
+        "discount" => intval($row["discount"] ?? 0),
+        "image" => $row["image"] ?: "",
+        "gallery" => json_decode($row["gallery_json"] ?? "[]", true) ?: [],
+        "items" => json_decode($row["items_json"] ?? "[]", true) ?: [],
+        "requirements" => $row["requirements"] ?: null,
+        "delivery" => $row["delivery"] ?: null,
+        "category" => $row["category"] ?: null,
+        "tags" => json_decode($row["tags_json"] ?? "[]", true) ?: [],
+        "variants" => json_decode($row["variants_json"] ?? "[]", true) ?: [],
+        "popularity" => intval($row["popularity"] ?? 0),
+        "is_active" => !empty($row["is_active"]),
+        "is_featured" => !empty($row["is_featured"]),
+        "featured_order" => intval($row["featured_order"] ?? 0),
+        "created_at" => $row["created_at"] ?: null,
+        "updated_at" => $row["updated_at"] ?: null
+    ];
+}
+
+function load_products(): array
+{
+    ensure_products_seeded();
+    $pdo = db();
+    $stmt = $pdo->query("SELECT * FROM products");
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return array_map("product_row_to_array", $rows);
 }
 
 function save_products(array $products): void
 {
-    $path = products_path();
-    $dir = dirname($path);
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
+    ensure_products_seeded();
+    $pdo = db();
+    $now = date("c");
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare("
+        INSERT INTO products (
+            id, name, title, perks, short_description, full_description, price, compare_at, discount, image,
+            gallery_json, items_json, requirements, delivery, category, tags_json, variants_json, popularity,
+            is_active, is_featured, featured_order, created_at, updated_at
+        ) VALUES (
+            :id, :name, :title, :perks, :short_description, :full_description, :price, :compare_at, :discount, :image,
+            :gallery_json, :items_json, :requirements, :delivery, :category, :tags_json, :variants_json, :popularity,
+            :is_active, :is_featured, :featured_order, :created_at, :updated_at
+        )
+        ON CONFLICT(id) DO UPDATE SET
+            name = excluded.name,
+            title = excluded.title,
+            perks = excluded.perks,
+            short_description = excluded.short_description,
+            full_description = excluded.full_description,
+            price = excluded.price,
+            compare_at = excluded.compare_at,
+            discount = excluded.discount,
+            image = excluded.image,
+            gallery_json = excluded.gallery_json,
+            items_json = excluded.items_json,
+            requirements = excluded.requirements,
+            delivery = excluded.delivery,
+            category = excluded.category,
+            tags_json = excluded.tags_json,
+            variants_json = excluded.variants_json,
+            popularity = excluded.popularity,
+            is_active = excluded.is_active,
+            is_featured = excluded.is_featured,
+            featured_order = excluded.featured_order,
+            updated_at = excluded.updated_at
+    ");
+    foreach ($products as $product) {
+        if (!is_array($product) || empty($product["id"])) {
+            continue;
+        }
+        $normalized = normalize_product($product, $product);
+        $stmt->execute([
+            "id" => sanitize_text($normalized["id"] ?? $product["id"]),
+            "name" => sanitize_text($normalized["name"] ?? ""),
+            "title" => sanitize_text($normalized["title"] ?? ""),
+            "perks" => sanitize_text($normalized["perks"] ?? ""),
+            "short_description" => sanitize_text($normalized["short_description"] ?? ""),
+            "full_description" => sanitize_text($normalized["full_description"] ?? ""),
+            "price" => floatval($normalized["price"] ?? 0),
+            "compare_at" => sanitize_text($normalized["compareAt"] ?? ""),
+            "discount" => intval($normalized["discount"] ?? 0),
+            "image" => sanitize_text($normalized["image"] ?? ""),
+            "gallery_json" => json_encode($normalized["gallery"] ?? []),
+            "items_json" => json_encode($normalized["items"] ?? []),
+            "requirements" => sanitize_text($normalized["requirements"] ?? ""),
+            "delivery" => sanitize_text($normalized["delivery"] ?? ""),
+            "category" => sanitize_text($normalized["category"] ?? ""),
+            "tags_json" => json_encode($normalized["tags"] ?? []),
+            "variants_json" => json_encode($normalized["variants"] ?? []),
+            "popularity" => intval($normalized["popularity"] ?? 0),
+            "is_active" => !empty($normalized["is_active"]) ? 1 : 0,
+            "is_featured" => !empty($normalized["is_featured"]) ? 1 : 0,
+            "featured_order" => intval($normalized["featured_order"] ?? 0),
+            "created_at" => $normalized["created_at"] ?? date("Y-m-d"),
+            "updated_at" => $now
+        ]);
     }
-    $temp = $path . ".tmp";
-    $handle = fopen($temp, "w");
-    if (!$handle) {
-        json_response(["error" => "Failed to write data"], 500);
-    }
-    if (!flock($handle, LOCK_EX)) {
-        json_response(["error" => "Failed to lock file"], 500);
-    }
-    fwrite($handle, json_encode($products, JSON_PRETTY_PRINT));
-    fflush($handle);
-    flock($handle, LOCK_UN);
-    fclose($handle);
-    rename($temp, $path);
+    $pdo->commit();
 }
 
 function slugify(string $value): string

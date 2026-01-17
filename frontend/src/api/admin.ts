@@ -8,8 +8,11 @@ export const adminLogin = (username: string, password: string, csrfToken: string
 export const adminLogout = () => apiFetch(`/admin/api/logout.php`);
 
 export const adminProducts = () => apiFetch<{ products: Product[] }>(`/admin/api/products.php?include_inactive=true`);
-export const adminSaveProduct = (payload: Record<string, unknown>) =>
-  apiFetch<{ ok: boolean; product: Product }>(`/admin/api/product-save.php`, { method: "POST", body: payload });
+export const adminSaveProduct = (payload: Record<string, unknown>) => {
+  const hasId = typeof payload.id === "string" && payload.id.length > 0;
+  const endpoint = hasId ? "/admin/api/product-update.php" : "/admin/api/product-create.php";
+  return apiFetch<{ ok: boolean; product: Product }>(endpoint, { method: "POST", body: payload });
+};
 export const adminDeleteProduct = (id: string, csrfToken: string) =>
   apiFetch(`/admin/api/product-delete.php`, { method: "POST", body: { id, csrf_token: csrfToken } });
 export const adminSaveFeatured = (featured: string[], csrfToken: string) =>

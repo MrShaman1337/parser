@@ -23,14 +23,7 @@ if (!$productId) {
     cached_json_response($payload, 60, time());
 }
 
-$products = load_products();
-$product = null;
-foreach ($products as $item) {
-    if (($item["id"] ?? "") === $productId) {
-        $product = $item;
-        break;
-    }
-}
+$product = get_product_by_id($productId);
 if (!$product || (($product["is_active"] ?? true) === false)) {
     $payload = ["ok" => true, "featured_drop" => null];
     cache_set("featured_drop", $payload);

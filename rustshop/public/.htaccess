@@ -1,9 +1,9 @@
 RewriteEngine On
 
 <IfModule mod_headers.c>
-  Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0" "expr=%{REQUEST_URI} =~ m#^/(admin/api|api/(auth|order))/#"
-  Header set Pragma "no-cache" "expr=%{REQUEST_URI} =~ m#^/(admin/api|api/(auth|order))/#"
-  Header set Expires "0" "expr=%{REQUEST_URI} =~ m#^/(admin/api|api/(auth|order))/#"
+  Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0" "expr=%{REQUEST_URI} =~ m#^/(admin/api|api/(auth|order|products))/#"
+  Header set Pragma "no-cache" "expr=%{REQUEST_URI} =~ m#^/(admin/api|api/(auth|order|products))/#"
+  Header set Expires "0" "expr=%{REQUEST_URI} =~ m#^/(admin/api|api/(auth|order|products))/#"
 
   <FilesMatch "\.(js|css|png|jpg|jpeg|gif|svg|webp|woff2|woff|ttf|ico)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
