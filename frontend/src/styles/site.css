@@ -220,6 +220,35 @@ a {
   outline: none;
 }
 
+.balance-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #10b981;
+  transition: all 0.2s ease;
+}
+
+.balance-pill:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.1));
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.balance-rub {
+  color: #10b981;
+}
+
+.balance-usd {
+  color: #888;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
 .cart-pill {
   display: inline-flex;
   align-items: center;

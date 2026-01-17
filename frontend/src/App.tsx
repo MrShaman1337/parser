@@ -13,6 +13,7 @@ const Support = lazy(() => import("./pages/Support"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 import { CartProvider } from "./context/CartContext";
 import { AdminSessionProvider } from "./context/AdminSessionContext";
 import { UserSessionProvider } from "./context/UserSessionContext";
@@ -63,6 +64,16 @@ const AppRoutes = () => {
               <ProtectedRoute>
                 <AdminLayout>
                   <AdminOrders />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminUsers />
                 </AdminLayout>
               </ProtectedRoute>
             }

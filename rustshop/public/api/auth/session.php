@@ -17,6 +17,9 @@ if (!empty($user["is_banned"])) {
     json_response(["error" => "User is banned"], 403);
 }
 
+$balance = floatval($user["balance"] ?? 0);
+$balanceUsd = $balance / 90.0;
+
 json_response([
     "ok" => true,
     "user" => [
@@ -24,6 +27,10 @@ json_response([
         "steam_id" => $user["steam_id"],
         "nickname" => $user["steam_nickname"],
         "avatar" => $user["steam_avatar"],
-        "profile_url" => $user["steam_profile_url"]
+        "profile_url" => $user["steam_profile_url"],
+        "balance" => $balance,
+        "balance_usd" => round($balanceUsd, 2),
+        "balance_formatted" => format_balance_rub($balance),
+        "balance_formatted_usd" => format_balance_with_usd($balance)
     ]
 ]);

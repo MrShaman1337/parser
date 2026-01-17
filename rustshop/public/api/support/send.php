@@ -50,10 +50,26 @@ $context = stream_context_create([
         "timeout" => 6
     ]
 ]);
-$url = "https://api.telegram.org/bot" . urlencode($token) . "/sendMessage";
+$url = "https://api.telegram.org/bot" . $token . "/sendMessage";
 $result = @file_get_contents($url, false, $context);
 if ($result === false) {
-    json_response(["error" => "Failed to send message"], 502);
+    // Try with cURL as fallback
+    if (function_exists("curl_init")) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/x-www-form-urlencoded"]);
+        $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($result === false || $httpCode >= 400) {
+            json_response(["error" => "Failed to send message"], 502);
+        }
+    } else {
+        json_response(["error" => "Failed to send message"], 502);
+    }
 }
 
 json_response(["ok" => true]);

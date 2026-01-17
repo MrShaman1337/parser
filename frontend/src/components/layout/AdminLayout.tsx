@@ -22,6 +22,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Link to="/">View Site</Link>
             <Link to="/admin">Products</Link>
             <Link to="/admin/orders">Orders</Link>
+            <Link to="/admin/users">Users</Link>
             <button className="btn btn-secondary" onClick={handleLogout}>
               Logout
             </button>

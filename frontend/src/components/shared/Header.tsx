@@ -50,6 +50,12 @@ const Header = () => {
             </Link>
             {authenticated ? (
               <div className="nav" style={{ gap: "0.6rem" }}>
+                {user?.balance !== undefined && user.balance > 0 && (
+                  <Link to="/account" className="balance-pill" title={lang === "ru" ? "Ваш баланс" : "Your balance"}>
+                    <span className="balance-rub">{user.balance.toLocaleString("ru-RU")} ₽</span>
+                    {lang === "en" && <span className="balance-usd">(~${(user.balance / 90).toFixed(2)})</span>}
+                  </Link>
+                )}
                 <Link to="/account" className="btn btn-secondary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <img
                     src={user?.avatar || "/assets/img/avatar.svg"}

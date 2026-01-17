@@ -22,7 +22,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.localStorage.setItem("lang", next);
   };
   const t = (key: string) => translations[lang][key] || key;
-  const region = lang === "ru" ? "ru" : "eu";
+  const region: "eu" | "ru" = lang === "ru" ? "ru" : "eu";
   const value = useMemo(() => ({ lang, setLang, t, region }), [lang]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 };

@@ -51,6 +51,10 @@ export type User = {
   nickname: string;
   avatar?: string;
   profile_url?: string;
+  balance?: number;
+  balance_usd?: number;
+  balance_formatted?: string;
+  balance_formatted_usd?: string;
 };
 
 export type FeaturedDrop = {
