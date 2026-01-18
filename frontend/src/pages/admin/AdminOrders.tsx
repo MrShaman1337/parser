@@ -118,7 +118,7 @@ const AdminOrders = () => {
                   <ul className="admin-order-items">
                     {(current.items || []).map((item: any) => (
                       <li key={item.id}>
-                        {item.name} x{item.qty} — ${Number(item.line_total || 0).toFixed(2)}
+                        {item.name} x{item.qty} — {Number(item.line_total || 0).toFixed(0)} ₽
                       </li>
                     ))}
                   </ul>

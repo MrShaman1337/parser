@@ -51,7 +51,7 @@ const Checkout = () => {
   const shortage = total - balance;
 
   const formatPrice = (amount: number) => {
-    const rub = amount.toLocaleString("ru-RU", { minimumFractionDigits: 2 }) + " ₽";
+    const rub = Math.round(amount).toLocaleString("ru-RU") + " ₽";
     if (lang === "en") {
       const usd = (amount / 90).toFixed(2);
       return `${rub} (~$${usd})`;

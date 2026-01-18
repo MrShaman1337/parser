@@ -77,8 +77,8 @@ const Home = () => {
               <h3>{featuredDrop.title}</h3>
               {featuredDrop.subtitle ? <p className="muted">{featuredDrop.subtitle}</p> : null}
               <div className="price">
-                ${featuredDrop.price.toFixed(2)}{" "}
-                {featuredDrop.old_price ? <del>${featuredDrop.old_price.toFixed(2)}</del> : null}
+                {featuredDrop.price.toFixed(0)} ₽{" "}
+                {featuredDrop.old_price ? <del>{featuredDrop.old_price.toFixed(0)} ₽</del> : null}
               </div>
               {featuredDrop.product ? (
                 <button className="btn btn-primary" onClick={() => addItem(featuredDrop.product as Product, 1)}>

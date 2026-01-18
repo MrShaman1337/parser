@@ -48,6 +48,9 @@ $stmt = $pdo->prepare("
         is_active = :is_active,
         is_featured = :is_featured,
         featured_order = :featured_order,
+        product_type = :product_type,
+        rust_command_template = :rust_command_template,
+        server_restriction = :server_restriction,
         updated_at = :updated_at
     WHERE id = :id
 ");
@@ -74,6 +77,9 @@ $stmt->execute([
     "is_active" => !empty($normalized["is_active"]) ? 1 : 0,
     "is_featured" => !empty($normalized["is_featured"]) ? 1 : 0,
     "featured_order" => intval($normalized["featured_order"] ?? 0),
+    "product_type" => sanitize_text($normalized["product_type"] ?? "item"),
+    "rust_command_template" => $normalized["rust_command_template"] ?? "",
+    "server_restriction" => sanitize_text($normalized["server_restriction"] ?? "all"),
     "updated_at" => $now
 ]);
 $stmt = $pdo->prepare("SELECT * FROM products WHERE id = :id LIMIT 1");

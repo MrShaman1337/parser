@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 
 // Rust item from API
 interface RustItem {
@@ -32,6 +32,50 @@ const CATEGORIES: Record<number, string> = {
 // All category IDs
 const CATEGORY_IDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 
+// Cache key and TTL (24 hours)
+const ITEMS_CACHE_KEY = "rust_items_cache";
+const ITEMS_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+interface CachedItems {
+  items: RustItem[];
+  timestamp: number;
+}
+
+// Get items from cache
+const getCachedItems = (): RustItem[] | null => {
+  try {
+    const cached = localStorage.getItem(ITEMS_CACHE_KEY);
+    if (!cached) return null;
+    const data: CachedItems = JSON.parse(cached);
+    if (Date.now() - data.timestamp > ITEMS_CACHE_TTL) {
+      localStorage.removeItem(ITEMS_CACHE_KEY);
+      return null;
+    }
+    return data.items;
+  } catch {
+    return null;
+  }
+};
+
+// Save items to cache
+const setCachedItems = (items: RustItem[]) => {
+  try {
+    const data: CachedItems = { items, timestamp: Date.now() };
+    localStorage.setItem(ITEMS_CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+// Preload images for visible items
+const preloadedImages = new Set<string>();
+const preloadImage = (src: string) => {
+  if (preloadedImages.has(src)) return;
+  preloadedImages.add(src);
+  const img = new Image();
+  img.src = src;
+};
+
 interface RustItemPickerProps {
   onSelect: (item: { name: string; shortName: string; command: string; image: string }) => void;
   onClose: () => void;
@@ -47,12 +91,22 @@ const RustItemPicker = ({ onSelect, onClose }: RustItemPickerProps) => {
   useEffect(() => {
     const fetchItems = async () => {
       try {
+        // Check cache first
+        const cached = getCachedItems();
+        if (cached && cached.length > 0) {
+          setItems(cached);
+          setLoading(false);
+          return;
+        }
+
         setLoading(true);
         const response = await fetch("https://api.carbonmod.gg/meta/rust/items.json");
         if (!response.ok) throw new Error("Failed to fetch items");
         const data: RustItem[] = await response.json();
         // Filter out hidden items
-        setItems(data.filter((item) => !item.Hidden));
+        const visibleItems = data.filter((item) => !item.Hidden);
+        setItems(visibleItems);
+        setCachedItems(visibleItems);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load items");
@@ -80,14 +134,21 @@ const RustItemPicker = ({ onSelect, onClose }: RustItemPickerProps) => {
     return list.sort((a, b) => a.DisplayName.localeCompare(b.DisplayName));
   }, [items, selectedCategory, search]);
 
-  const handleSelect = (item: RustItem) => {
+  // Preload images for first 50 filtered items
+  useEffect(() => {
+    filtered.slice(0, 50).forEach((item) => {
+      preloadImage(`https://cdn.carbonmod.gg/items/${item.ShortName}.png`);
+    });
+  }, [filtered]);
+
+  const handleSelect = useCallback((item: RustItem) => {
     onSelect({
       name: item.DisplayName,
       shortName: item.ShortName,
       command: `inventory.giveto {steamid} ${item.ShortName} {qty}`,
       image: `https://cdn.carbonmod.gg/items/${item.ShortName}.png`
     });
-  };
+  }, [onSelect]);
 
   // Count items per category
   const categoryCounts = useMemo(() => {
@@ -98,14 +159,42 @@ const RustItemPicker = ({ onSelect, onClose }: RustItemPickerProps) => {
     return counts;
   }, [items]);
 
+  // Force refresh cache
+  const handleRefreshCache = async () => {
+    localStorage.removeItem(ITEMS_CACHE_KEY);
+    setLoading(true);
+    try {
+      const response = await fetch("https://api.carbonmod.gg/meta/rust/items.json");
+      if (!response.ok) throw new Error("Failed to fetch items");
+      const data: RustItem[] = await response.json();
+      const visibleItems = data.filter((item) => !item.Hidden);
+      setItems(visibleItems);
+      setCachedItems(visibleItems);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load items");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="rust-item-picker-overlay" onClick={onClose}>
       <div className="rust-item-picker" onClick={(e) => e.stopPropagation()}>
         <div className="rust-item-picker-header">
           <h3>Выбор предмета</h3>
-          <button className="btn btn-ghost" onClick={onClose}>
-            ✕
-          </button>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button 
+              className="btn btn-ghost" 
+              onClick={handleRefreshCache}
+              title="Обновить кеш предметов"
+            >
+              🔄
+            </button>
+            <button className="btn btn-ghost" onClick={onClose}>
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="rust-item-picker-categories">
@@ -136,6 +225,7 @@ const RustItemPicker = ({ onSelect, onClose }: RustItemPickerProps) => {
             placeholder="Поиск..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            autoFocus
           />
         </div>
 
@@ -150,7 +240,7 @@ const RustItemPicker = ({ onSelect, onClose }: RustItemPickerProps) => {
           {error && (
             <div className="rust-item-picker-error">
               <p>❌ {error}</p>
-              <button className="btn btn-secondary" onClick={() => window.location.reload()}>
+              <button className="btn btn-secondary" onClick={handleRefreshCache}>
                 Попробовать снова
               </button>
             </div>
@@ -174,6 +264,7 @@ const RustItemPicker = ({ onSelect, onClose }: RustItemPickerProps) => {
                     src={`https://cdn.carbonmod.gg/items/${item.ShortName}.png`}
                     alt={item.DisplayName}
                     loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = "/assets/img/placeholder.svg";
                     }}

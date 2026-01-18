@@ -19,7 +19,7 @@ const Cart = () => {
                   <img src={item.image} alt={item.title} width={120} />
                   <div style={{ flex: 1 }}>
                     <h3>{item.title}</h3>
-                    <div className="price">{item.priceFormatted || `$${item.price.toFixed(2)}`}</div>
+                    <div className="price">{item.priceFormatted || `${item.price.toFixed(0)} ₽`}</div>
                   </div>
                   <div>
                     <label htmlFor={`qty-${item.id}`}>{t("cart.qty")}</label>
@@ -44,11 +44,11 @@ const Cart = () => {
           <h3>{t("cart.summary")}</h3>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span className="muted">{t("cart.subtotal")}</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>{subtotal.toFixed(0)} ₽</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, marginTop: "0.5rem" }}>
             <span>{t("cart.total")}</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>{subtotal.toFixed(0)} ₽</span>
           </div>
           <div style={{ marginTop: "1rem" }}>
             <label htmlFor="coupon">{t("cart.coupon")}</label>

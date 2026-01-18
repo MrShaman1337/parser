@@ -590,7 +590,7 @@ const AdminDashboard = () => {
                 <h3>{form.name || "Product"}</h3>
                 <p className="muted">{form.perks || form.short_description}</p>
               </div>
-              <div className="price">${(form.price || 0).toFixed(2)}</div>
+              <div className="price">{(form.price || 0).toFixed(0)} ₽</div>
             </article>
           </div>
         </div>

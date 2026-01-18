@@ -30,11 +30,11 @@ $stmt = $pdo->prepare("
     INSERT INTO products (
         id, region, name, title, perks, short_description, full_description, price, compare_at, discount, image,
         gallery_json, items_json, requirements, delivery, category, tags_json, variants_json, popularity,
-        is_active, is_featured, featured_order, created_at, updated_at
+        is_active, is_featured, featured_order, product_type, rust_command_template, server_restriction, created_at, updated_at
     ) VALUES (
         :id, :region, :name, :title, :perks, :short_description, :full_description, :price, :compare_at, :discount, :image,
         :gallery_json, :items_json, :requirements, :delivery, :category, :tags_json, :variants_json, :popularity,
-        :is_active, :is_featured, :featured_order, :created_at, :updated_at
+        :is_active, :is_featured, :featured_order, :product_type, :rust_command_template, :server_restriction, :created_at, :updated_at
     )
 ");
 $stmt->execute([
@@ -60,6 +60,9 @@ $stmt->execute([
     "is_active" => !empty($normalized["is_active"]) ? 1 : 0,
     "is_featured" => !empty($normalized["is_featured"]) ? 1 : 0,
     "featured_order" => intval($normalized["featured_order"] ?? 0),
+    "product_type" => sanitize_text($normalized["product_type"] ?? "item"),
+    "rust_command_template" => $normalized["rust_command_template"] ?? "",
+    "server_restriction" => sanitize_text($normalized["server_restriction"] ?? "all"),
     "created_at" => $normalized["created_at"] ?? date("Y-m-d"),
     "updated_at" => $now
 ]);
