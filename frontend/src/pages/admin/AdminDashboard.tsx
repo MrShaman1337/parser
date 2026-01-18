@@ -31,7 +31,8 @@ const emptyProduct: Partial<Product> = {
   is_featured: false,
   featured_order: 0,
   product_type: "item",
-  rust_command_template: ""
+  rust_command_template: "",
+  server_restriction: "all"
 };
 
 const emptyFeaturedDrop = {
@@ -49,6 +50,7 @@ const AdminDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [region, setRegion] = useState<"eu" | "ru">("eu");
   const canEdit = role === "admin" || role === "superadmin";
+  const [servers, setServers] = useState<{id: string; name: string}[]>([]);
 
   const [filters, setFilters] = useState({ q: "", category: "", featured: "", sort: "name" });
   const [modalOpen, setModalOpen] = useState(false);
@@ -78,6 +80,17 @@ const AdminDashboard = () => {
       });
     } else {
       setDropForm({ ...emptyFeaturedDrop });
+    }
+    
+    // Load servers for restriction dropdown
+    try {
+      const serversRes = await fetch("/admin/api/servers.php", { credentials: "include" });
+      const serversData = await serversRes.json();
+      if (serversData.ok) {
+        setServers(serversData.servers || []);
+      }
+    } catch (e) {
+      console.error("Failed to load servers", e);
     }
   };
 
@@ -479,6 +492,21 @@ const AdminDashboard = () => {
                 />
                 <small className="muted" style={{ display: "block", marginTop: "0.25rem", fontSize: "0.75rem" }}>
                   Placeholders: {"{steamid}"}, {"{qty}"}, {"{productId}"}, {"{orderId}"}, {"{username}"}
+                </small>
+              </div>
+              <div>
+                <label>Server Restriction</label>
+                <select 
+                  value={form.server_restriction || "all"} 
+                  onChange={(e) => setForm({ ...form, server_restriction: e.target.value })}
+                >
+                  <option value="all">All Servers</option>
+                  {servers.map(server => (
+                    <option key={server.id} value={server.id}>{server.name}</option>
+                  ))}
+                </select>
+                <small className="muted" style={{ display: "block", marginTop: "0.25rem", fontSize: "0.75rem" }}>
+                  Select "All Servers" or a specific server for this product
                 </small>
               </div>
               <div className="admin-form-wide">

@@ -37,7 +37,7 @@ namespace Oxide.Plugins
             public bool AutoDeliverOnConnect { get; set; } = false;
 
             [JsonProperty("Show UI Notification")]
-            public bool ShowUINotification { get; set; } = true;
+            public bool ShowUINotification { get; set; } = false;
 
             [JsonProperty("UI Notification Duration (seconds)")]
             public float UINotificationDuration { get; set; } = 10f;
@@ -219,6 +219,7 @@ namespace Oxide.Plugins
         private Dictionary<ulong, float> playerCooldowns = new Dictionary<ulong, float>();
         private Dictionary<ulong, List<CartEntry>> playerCarts = new Dictionary<ulong, List<CartEntry>>();
         private Dictionary<ulong, int> playerPendingCount = new Dictionary<ulong, int>();
+        private Dictionary<ulong, int> playerNotifiedCount = new Dictionary<ulong, int>(); // Track notified count to avoid spam
         private const float COOLDOWN_SECONDS = 3f;
         private Timer checkTimer;
 
@@ -242,6 +243,9 @@ namespace Oxide.Plugins
                 {
                     CheckPendingItems(player, false);
                 }
+                
+                // Send heartbeat with player count
+                SendHeartbeat();
             });
 
             // Check all currently online players
@@ -249,6 +253,45 @@ namespace Oxide.Plugins
             {
                 CheckPendingItems(player, false);
             }
+            
+            // Send initial heartbeat
+            SendHeartbeat();
+        }
+        
+        private void SendHeartbeat()
+        {
+            if (string.IsNullOrEmpty(config.ApiKey))
+            {
+                DebugLog("No API key configured, skipping heartbeat");
+                return;
+            }
+            
+            string url = $"{config.ApiBaseUrl}/api/rust/heartbeat.php";
+            
+            var payload = new Dictionary<string, object>
+            {
+                { "api_key", config.ApiKey },
+                { "current_players", BasePlayer.activePlayerList.Count },
+                { "max_players", ConVar.Server.maxplayers },
+                { "map_name", ConVar.Server.level }
+            };
+            
+            string body = JsonConvert.SerializeObject(payload);
+            
+            webrequest.Enqueue(url, body, (code, response) =>
+            {
+                if (code == 200)
+                {
+                    DebugLog($"Heartbeat sent: {BasePlayer.activePlayerList.Count}/{ConVar.Server.maxplayers} players");
+                }
+                else
+                {
+                    DebugLog($"Heartbeat failed: code={code}");
+                }
+            }, this, RequestMethod.POST, new Dictionary<string, string>
+            {
+                { "Content-Type", "application/json" }
+            });
         }
 
         private void Unload()
@@ -282,6 +325,7 @@ namespace Oxide.Plugins
 
             DestroyAllUI(player);
             playerPendingCount.Remove(player.userID);
+            playerNotifiedCount.Remove(player.userID);
             playerCooldowns.Remove(player.userID);
             playerCarts.Remove(player.userID);
         }
@@ -475,15 +519,24 @@ namespace Oxide.Plugins
                         {
                             ClaimAllItems(player);
                         }
-                        else if (config.ShowUINotification)
+                        else
                         {
-                            ShowNotificationUI(player, count);
-                            SendReply(player, Lang("PendingItems", player.UserIDString, count, config.ChatCommandCart));
+                            // Only notify once when items first appear (or count increases)
+                            int previousNotified = 0;
+                            playerNotifiedCount.TryGetValue(player.userID, out previousNotified);
+                            
+                            if (count > previousNotified)
+                            {
+                                // New items detected - notify player once
+                                SendReply(player, Lang("PendingItems", player.UserIDString, count, config.ChatCommandCart));
+                                playerNotifiedCount[player.userID] = count;
+                            }
                         }
                     }
                     else
                     {
-                        DestroyNotificationUI(player);
+                        // Reset notification tracking when no items
+                        playerNotifiedCount.Remove(player.userID);
                     }
                 }
                 catch (Exception ex)
@@ -549,6 +602,7 @@ namespace Oxide.Plugins
                     {
                         SendReply(player, Lang("NoItems", player.UserIDString));
                         playerPendingCount[player.userID] = 0;
+                        playerNotifiedCount.Remove(player.userID);
                         playerCarts[player.userID] = new List<CartEntry>();
                         return;
                     }
@@ -579,6 +633,7 @@ namespace Oxide.Plugins
                     }
 
                     playerPendingCount[player.userID] = 0;
+                    playerNotifiedCount.Remove(player.userID);
                     playerCarts[player.userID] = new List<CartEntry>();
 
                     if (failed == 0)
@@ -662,6 +717,16 @@ namespace Oxide.Plugins
                     {
                         currentCart.RemoveAll(e => e.Id == entryId);
                         playerPendingCount[player.userID] = currentCart.Count;
+                        
+                        // Update notification tracking
+                        if (currentCart.Count == 0)
+                        {
+                            playerNotifiedCount.Remove(player.userID);
+                        }
+                        else
+                        {
+                            playerNotifiedCount[player.userID] = currentCart.Count;
+                        }
                     }
 
                     // Refresh cart UI

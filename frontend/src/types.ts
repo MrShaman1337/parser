@@ -24,7 +24,21 @@ export type Product = {
   featured_order?: number;
   product_type?: "privilege" | "kit" | "item" | "mixed";
   rust_command_template?: string;
+  server_restriction?: string; // "all" or specific server_id
   created_at?: string;
+};
+
+export type Server = {
+  id: string;
+  name: string;
+  description?: string;
+  ip: string;
+  current_players: number;
+  max_players: number;
+  fill_percent: number;
+  map?: string;
+  region: string;
+  is_online: boolean;
 };
 
 export type CartItem = {

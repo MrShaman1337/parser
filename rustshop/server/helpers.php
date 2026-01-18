@@ -382,6 +382,44 @@ function init_db(): void
     $pdo->exec("CREATE INDEX IF NOT EXISTS orders_email_idx ON orders(customer_email);");
     $pdo->exec("CREATE INDEX IF NOT EXISTS orders_user_idx ON orders(user_id);");
 
+    // Create servers table for multi-server support
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS servers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            ip_address TEXT NOT NULL,
+            port INTEGER NOT NULL DEFAULT 28015,
+            rcon_port INTEGER DEFAULT 28016,
+            rcon_password TEXT,
+            query_port INTEGER DEFAULT 28015,
+            max_players INTEGER NOT NULL DEFAULT 100,
+            current_players INTEGER NOT NULL DEFAULT 0,
+            map_name TEXT DEFAULT 'Procedural Map',
+            is_active INTEGER NOT NULL DEFAULT 1,
+            display_order INTEGER NOT NULL DEFAULT 0,
+            region TEXT NOT NULL DEFAULT 'eu',
+            api_key TEXT,
+            last_query_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+    ");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS servers_active_idx ON servers(is_active);");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS servers_region_idx ON servers(region);");
+
+    // Add server_id to cart_entries if not exists
+    $cartColumns = $pdo->query("PRAGMA table_info(cart_entries)")->fetchAll(PDO::FETCH_ASSOC);
+    $cartColumnNames = array_map(fn($col) => $col["name"] ?? "", $cartColumns);
+    if (!in_array("server_id", $cartColumnNames, true)) {
+        $pdo->exec("ALTER TABLE cart_entries ADD COLUMN server_id TEXT");
+    }
+
+    // Add server_id to orders if not exists
+    if (!in_array("server_id", $orderColumnNames, true)) {
+        $pdo->exec("ALTER TABLE orders ADD COLUMN server_id TEXT");
+    }
+
     $pdo->beginTransaction();
     $stmt = $pdo->prepare("INSERT OR IGNORE INTO site_stats (key, value) VALUES (:key, :value)");
     $stmt->execute(["key" => "orders_delivered", "value" => 214]);
@@ -790,7 +828,7 @@ function format_balance_with_usd(float $amountRub, float $rate = 90.0): string
  * Create cart entries for a paid order. Called after successful payment.
  * These entries will be read by the Rust plugin for in-game delivery.
  */
-function create_cart_entries_for_order(string $orderId, int $userId, string $steamId, array $orderItems): array
+function create_cart_entries_for_order(string $orderId, int $userId, string $steamId, array $orderItems, ?string $serverId = null): array
 {
     init_db();
     $pdo = db();
@@ -802,10 +840,10 @@ function create_cart_entries_for_order(string $orderId, int $userId, string $ste
         $stmt = $pdo->prepare("
             INSERT INTO cart_entries (
                 id, user_id, steam_id, order_id, product_id, product_name, quantity,
-                rust_command_template_snapshot, status, attempt_count, created_at, updated_at
+                rust_command_template_snapshot, status, attempt_count, server_id, created_at, updated_at
             ) VALUES (
                 :id, :user_id, :steam_id, :order_id, :product_id, :product_name, :quantity,
-                :rust_command, :status, 0, :created_at, :updated_at
+                :rust_command, :status, 0, :server_id, :created_at, :updated_at
             )
         ");
         $stmt->execute([
@@ -818,6 +856,7 @@ function create_cart_entries_for_order(string $orderId, int $userId, string $ste
             ":quantity" => intval($item["qty"] ?? $item["quantity"] ?? 1),
             ":rust_command" => $item["rust_command_template_snapshot"] ?? "",
             ":status" => "pending",
+            ":server_id" => $serverId,
             ":created_at" => $now,
             ":updated_at" => $now
         ]);
@@ -826,6 +865,7 @@ function create_cart_entries_for_order(string $orderId, int $userId, string $ste
             "product_id" => $item["product_id"] ?? $item["id"] ?? "",
             "product_name" => $item["product_name"] ?? $item["name"] ?? "Item",
             "quantity" => intval($item["qty"] ?? $item["quantity"] ?? 1),
+            "server_id" => $serverId,
             "status" => "pending"
         ];
     }
@@ -1095,6 +1135,9 @@ function ensure_products_table(): void
     if (!in_array("rust_command_template", $columnNames, true)) {
         $pdo->exec("ALTER TABLE products ADD COLUMN rust_command_template TEXT");
     }
+    if (!in_array("server_restriction", $columnNames, true)) {
+        $pdo->exec("ALTER TABLE products ADD COLUMN server_restriction TEXT DEFAULT 'all'"); // 'all' or specific server_id
+    }
     $pdo->exec("CREATE INDEX IF NOT EXISTS products_category_idx ON products(category);");
     $pdo->exec("CREATE INDEX IF NOT EXISTS products_featured_idx ON products(is_featured);");
     $pdo->exec("CREATE INDEX IF NOT EXISTS products_active_idx ON products(is_active);");
@@ -1284,11 +1327,11 @@ function upsert_product(array $input, ?string $id = null): array
         INSERT INTO products (
             id, name, title, perks, short_description, full_description, price, compare_at, discount, image,
             gallery_json, items_json, requirements, delivery, category, tags_json, variants_json, popularity,
-            is_active, is_featured, featured_order, product_type, rust_command_template, created_at, updated_at
+            is_active, is_featured, featured_order, product_type, rust_command_template, server_restriction, created_at, updated_at
         ) VALUES (
             :id, :name, :title, :perks, :short_description, :full_description, :price, :compare_at, :discount, :image,
             :gallery_json, :items_json, :requirements, :delivery, :category, :tags_json, :variants_json, :popularity,
-            :is_active, :is_featured, :featured_order, :product_type, :rust_command_template, :created_at, :updated_at
+            :is_active, :is_featured, :featured_order, :product_type, :rust_command_template, :server_restriction, :created_at, :updated_at
         )
         ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
@@ -1313,6 +1356,7 @@ function upsert_product(array $input, ?string $id = null): array
             featured_order = excluded.featured_order,
             product_type = excluded.product_type,
             rust_command_template = excluded.rust_command_template,
+            server_restriction = excluded.server_restriction,
             updated_at = excluded.updated_at
     ");
     $stmt->execute([
@@ -1339,6 +1383,7 @@ function upsert_product(array $input, ?string $id = null): array
         "featured_order" => intval($normalized["featured_order"] ?? 0),
         "product_type" => sanitize_text($normalized["product_type"] ?? "item"),
         "rust_command_template" => $normalized["rust_command_template"] ?? "",
+        "server_restriction" => sanitize_text($normalized["server_restriction"] ?? "all"),
         "created_at" => $normalized["created_at"] ?? date("Y-m-d"),
         "updated_at" => $now
     ]);
@@ -1406,6 +1451,7 @@ function product_row_to_array(array $row): array
         "full_description" => $row["full_description"] ?: null,
         "product_type" => $row["product_type"] ?? "item",
         "rust_command_template" => $row["rust_command_template"] ?? null,
+        "server_restriction" => $row["server_restriction"] ?? "all",
         "price" => $price,
         "priceFormatted" => $currency . number_format($price, 2),
         "compareAt" => $row["compare_at"] ?: null,
@@ -1569,6 +1615,7 @@ function normalize_product(array $input, array $existing = []): array
         $productType = "item";
     }
     $rustCommandTemplate = $input["rust_command_template"] ?? $existing["rust_command_template"] ?? "";
+    $serverRestriction = sanitize_text($input["server_restriction"] ?? $existing["server_restriction"] ?? "all");
 
     return array_merge($existing, [
         "name" => $name,
@@ -1593,6 +1640,193 @@ function normalize_product(array $input, array $existing = []): array
         "featured_order" => $featuredOrder,
         "product_type" => $productType,
         "rust_command_template" => $rustCommandTemplate,
+        "server_restriction" => $serverRestriction,
         "created_at" => $createdAt
     ]);
+}
+
+// =====================================================
+// SERVER MANAGEMENT FUNCTIONS
+// =====================================================
+
+/**
+ * Get all active servers for a region.
+ */
+function get_servers(string $region = "eu", bool $includeInactive = false): array
+{
+    init_db();
+    $pdo = db();
+    
+    $sql = "SELECT * FROM servers WHERE region = :region";
+    if (!$includeInactive) {
+        $sql .= " AND is_active = 1";
+    }
+    $sql .= " ORDER BY display_order ASC, name ASC";
+    
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([":region" => $region]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Get all servers regardless of region.
+ */
+function get_all_servers(bool $includeInactive = false): array
+{
+    init_db();
+    $pdo = db();
+    
+    $sql = "SELECT * FROM servers";
+    if (!$includeInactive) {
+        $sql .= " WHERE is_active = 1";
+    }
+    $sql .= " ORDER BY region ASC, display_order ASC, name ASC";
+    
+    $stmt = $pdo->query($sql);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Get a server by ID.
+ */
+function get_server_by_id(string $id): ?array
+{
+    init_db();
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT * FROM servers WHERE id = :id LIMIT 1");
+    $stmt->execute([":id" => $id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+/**
+ * Get a server by API key (for plugin authentication).
+ */
+function get_server_by_api_key(string $apiKey): ?array
+{
+    if (empty($apiKey)) return null;
+    init_db();
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT * FROM servers WHERE api_key = :api_key AND is_active = 1 LIMIT 1");
+    $stmt->execute([":api_key" => $apiKey]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+/**
+ * Create or update a server.
+ */
+function upsert_server(array $data, ?string $id = null): array
+{
+    init_db();
+    $pdo = db();
+    $now = date("c");
+    
+    $serverId = $id ?: $data["id"] ?? "srv_" . bin2hex(random_bytes(4));
+    $existing = get_server_by_id($serverId);
+    
+    $name = sanitize_text($data["name"] ?? $existing["name"] ?? "New Server");
+    $description = sanitize_text($data["description"] ?? $existing["description"] ?? "");
+    $ipAddress = sanitize_text($data["ip_address"] ?? $existing["ip_address"] ?? "");
+    $port = intval($data["port"] ?? $existing["port"] ?? 28015);
+    $rconPort = intval($data["rcon_port"] ?? $existing["rcon_port"] ?? 28016);
+    $rconPassword = $data["rcon_password"] ?? $existing["rcon_password"] ?? "";
+    $queryPort = intval($data["query_port"] ?? $existing["query_port"] ?? 28015);
+    $maxPlayers = intval($data["max_players"] ?? $existing["max_players"] ?? 100);
+    $currentPlayers = intval($data["current_players"] ?? $existing["current_players"] ?? 0);
+    $mapName = sanitize_text($data["map_name"] ?? $existing["map_name"] ?? "Procedural Map");
+    $isActive = isset($data["is_active"]) ? (sanitize_bool($data["is_active"]) ? 1 : 0) : ($existing["is_active"] ?? 1);
+    $displayOrder = intval($data["display_order"] ?? $existing["display_order"] ?? 0);
+    $region = sanitize_text($data["region"] ?? $existing["region"] ?? "eu");
+    $apiKey = $data["api_key"] ?? $existing["api_key"] ?? bin2hex(random_bytes(16));
+    $createdAt = $existing["created_at"] ?? $now;
+    
+    $stmt = $pdo->prepare("
+        INSERT INTO servers (id, name, description, ip_address, port, rcon_port, rcon_password, query_port,
+            max_players, current_players, map_name, is_active, display_order, region, api_key, created_at, updated_at)
+        VALUES (:id, :name, :description, :ip_address, :port, :rcon_port, :rcon_password, :query_port,
+            :max_players, :current_players, :map_name, :is_active, :display_order, :region, :api_key, :created_at, :updated_at)
+        ON CONFLICT(id) DO UPDATE SET
+            name = excluded.name,
+            description = excluded.description,
+            ip_address = excluded.ip_address,
+            port = excluded.port,
+            rcon_port = excluded.rcon_port,
+            rcon_password = excluded.rcon_password,
+            query_port = excluded.query_port,
+            max_players = excluded.max_players,
+            current_players = excluded.current_players,
+            map_name = excluded.map_name,
+            is_active = excluded.is_active,
+            display_order = excluded.display_order,
+            region = excluded.region,
+            api_key = excluded.api_key,
+            updated_at = excluded.updated_at
+    ");
+    
+    $stmt->execute([
+        ":id" => $serverId,
+        ":name" => $name,
+        ":description" => $description,
+        ":ip_address" => $ipAddress,
+        ":port" => $port,
+        ":rcon_port" => $rconPort,
+        ":rcon_password" => $rconPassword,
+        ":query_port" => $queryPort,
+        ":max_players" => $maxPlayers,
+        ":current_players" => $currentPlayers,
+        ":map_name" => $mapName,
+        ":is_active" => $isActive,
+        ":display_order" => $displayOrder,
+        ":region" => $region,
+        ":api_key" => $apiKey,
+        ":created_at" => $createdAt,
+        ":updated_at" => $now
+    ]);
+    
+    return get_server_by_id($serverId);
+}
+
+/**
+ * Delete a server.
+ */
+function delete_server(string $id): bool
+{
+    init_db();
+    $pdo = db();
+    $stmt = $pdo->prepare("DELETE FROM servers WHERE id = :id");
+    return $stmt->execute([":id" => $id]);
+}
+
+/**
+ * Update server player count (called by plugin heartbeat).
+ */
+function update_server_players(string $serverId, int $currentPlayers): bool
+{
+    init_db();
+    $pdo = db();
+    $stmt = $pdo->prepare("UPDATE servers SET current_players = :players, last_query_at = :now WHERE id = :id");
+    return $stmt->execute([
+        ":players" => $currentPlayers,
+        ":now" => date("c"),
+        ":id" => $serverId
+    ]);
+}
+
+/**
+ * Get pending cart entries for a specific server.
+ */
+function get_pending_cart_entries_by_server(string $steamId, string $serverId): array
+{
+    init_db();
+    $pdo = db();
+    $stmt = $pdo->prepare("
+        SELECT * FROM cart_entries 
+        WHERE steam_id = :steam_id 
+        AND (server_id = :server_id OR server_id IS NULL OR server_id = '')
+        AND status = 'pending'
+        ORDER BY created_at ASC
+    ");
+    $stmt->execute([":steam_id" => $steamId, ":server_id" => $serverId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }

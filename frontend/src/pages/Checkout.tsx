@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useI18n } from "../i18n/I18nContext";
 import { useUserSession } from "../context/UserSessionContext";
+import { Server } from "../types";
 
 const Checkout = () => {
   const { items, subtotal: total, clear } = useCart();
@@ -11,7 +12,28 @@ const Checkout = () => {
   const [successOpen, setSuccessOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
-  const { t, lang } = useI18n();
+  const { t, lang, region } = useI18n();
+  const [servers, setServers] = useState<Server[]>([]);
+  const [selectedServer, setSelectedServer] = useState("");
+  const [loadingServers, setLoadingServers] = useState(true);
+
+  // Load available servers
+  useEffect(() => {
+    const loadServers = async () => {
+      try {
+        const res = await fetch(`/api/servers.php?region=${region}`);
+        const data = await res.json();
+        if (data.ok && data.servers?.length > 0) {
+          setServers(data.servers);
+          setSelectedServer(data.servers[0].id);
+        }
+      } catch (e) {
+        console.error("Failed to load servers", e);
+      }
+      setLoadingServers(false);
+    };
+    loadServers();
+  }, [region]);
 
   const balance = user?.balance ?? 0;
   const canAfford = balance >= total;
@@ -51,12 +73,17 @@ const Checkout = () => {
     const form = event.currentTarget;
     if (!form.reportValidity()) return;
 
+    if (!selectedServer) {
+      setError(lang === "ru" ? "Выберите сервер" : "Please select a server");
+      return;
+    }
+
     setProcessing(true);
     const formData = new FormData(form);
     const payload = {
       email: String(formData.get("email") || ""),
       name: String(formData.get("nickname") || ""),
-      server: String(formData.get("server") || ""),
+      server_id: selectedServer,
       note: String(formData.get("note") || ""),
       items: items.map((item) => ({ id: item.id, qty: item.qty }))
     };
@@ -220,8 +247,29 @@ const Checkout = () => {
               {lang === "ru" ? "Информация о доставке" : "Delivery Information"}
             </h3>
             
-            <label htmlFor="server">{t("checkout.server")} *</label>
-            <input id="server" name="server" type="text" required placeholder={t("checkout.serverPlaceholder")} />
+            <label htmlFor="server">{lang === "ru" ? "Сервер для доставки" : "Delivery Server"} *</label>
+            {loadingServers ? (
+              <div className="skeleton" style={{ height: 42 }} />
+            ) : servers.length === 0 ? (
+              <div style={{ padding: "0.75rem", background: "rgba(239,68,68,0.1)", borderRadius: 8, color: "#ef4444" }}>
+                {lang === "ru" ? "Нет доступных серверов" : "No servers available"}
+              </div>
+            ) : (
+              <select 
+                id="server" 
+                name="server" 
+                required
+                value={selectedServer}
+                onChange={(e) => setSelectedServer(e.target.value)}
+                style={{ width: "100%" }}
+              >
+                {servers.map(server => (
+                  <option key={server.id} value={server.id}>
+                    {server.name} ({server.current_players}/{server.max_players} {lang === "ru" ? "игроков" : "players"})
+                  </option>
+                ))}
+              </select>
+            )}
             
             <label htmlFor="nickname">{t("checkout.nickname")}</label>
             <input 

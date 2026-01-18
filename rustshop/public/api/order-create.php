@@ -26,6 +26,16 @@ if (!validate_steam_id($steamId)) {
 
 $data = read_input();
 
+// Validate server selection
+$serverId = sanitize_text($data["server_id"] ?? "");
+$server = null;
+if (!empty($serverId)) {
+    $server = get_server_by_id($serverId);
+    if (!$server || !$server["is_active"]) {
+        json_response(["error" => "Выбранный сервер недоступен", "error_en" => "Selected server is not available"], 400);
+    }
+}
+
 $items = $data["items"] ?? [];
 if (!is_array($items) || count($items) === 0) {
     json_response(["error" => "Корзина пуста", "error_en" => "Cart is empty"], 400);
@@ -51,6 +61,16 @@ foreach ($items as $item) {
     }
     if (($product["is_active"] ?? true) === false) {
         json_response(["error" => "Товар недоступен", "error_en" => "Item not available"], 400);
+    }
+    
+    // Check server restriction
+    $serverRestriction = $product["server_restriction"] ?? "all";
+    if ($serverRestriction !== "all" && !empty($serverId) && $serverRestriction !== $serverId) {
+        $productName = $product["name"] ?? $product["title"] ?? $id;
+        json_response([
+            "error" => "Товар '$productName' недоступен на выбранном сервере",
+            "error_en" => "Product '$productName' is not available on selected server"
+        ], 400);
     }
     
     // Price is stored in RUB
@@ -106,10 +126,10 @@ $pdo = db();
 $pdo->beginTransaction();
 
 try {
-    // Create order with user_id and steam_id snapshot
+    // Create order with user_id, steam_id and server_id snapshot
     $stmt = $pdo->prepare("
-        INSERT INTO orders (id, created_at, status, customer_email, customer_name, customer_note, items_json, subtotal, total, currency, ip, user_agent, user_id, steam_id)
-        VALUES (:id, :created_at, :status, :email, :name, :note, :items, :subtotal, :total, :currency, :ip, :ua, :user_id, :steam_id)
+        INSERT INTO orders (id, created_at, status, customer_email, customer_name, customer_note, items_json, subtotal, total, currency, ip, user_agent, user_id, steam_id, server_id)
+        VALUES (:id, :created_at, :status, :email, :name, :note, :items, :subtotal, :total, :currency, :ip, :ua, :user_id, :steam_id, :server_id)
     ");
     $stmt->execute([
         ":id" => $orderId,
@@ -125,7 +145,8 @@ try {
         ":ip" => $_SERVER["REMOTE_ADDR"] ?? "",
         ":ua" => substr($_SERVER["HTTP_USER_AGENT"] ?? "", 0, 255),
         ":user_id" => $userId,
-        ":steam_id" => $steamId
+        ":steam_id" => $steamId,
+        ":server_id" => $serverId ?: null
     ]);
     
     // Update stats
@@ -140,7 +161,7 @@ try {
     create_order_items($orderId, $orderItemsData);
     
     // Create cart_entries for Rust plugin delivery queue
-    $cartEntries = create_cart_entries_for_order($orderId, $userId, $steamId, $orderItemsData);
+    $cartEntries = create_cart_entries_for_order($orderId, $userId, $steamId, $orderItemsData, $serverId);
     
     cache_bust("stats");
     

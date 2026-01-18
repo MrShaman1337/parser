@@ -6,6 +6,7 @@ import { useCart } from "../context/CartContext";
 import { fetchFeaturedDrop, fetchStats } from "../api/site";
 import { useI18n } from "../i18n/I18nContext";
 import { useUserSession } from "../context/UserSessionContext";
+import ServerList from "../components/ServerList";
 
 const Home = () => {
   const [featured, setFeatured] = useState<Product[]>([]);
@@ -90,6 +91,12 @@ const Home = () => {
               )}
             </div>
           ) : null}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container">
+          <ServerList />
         </div>
       </section>
 
