@@ -14,8 +14,8 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("GoRustShop", "GO RUST", "1.0.0")]
-    [Description("Delivers purchased items from GO RUST web shop")]
+    [Info("GoRustShop", "GO RUST", "1.1.0")]
+    [Description("Delivers purchased items from GO RUST web shop with cart UI")]
     public class GoRustShop : RustPlugin
     {
         #region Configuration
@@ -34,7 +34,7 @@ namespace Oxide.Plugins
             public float CheckInterval { get; set; } = 30f;
 
             [JsonProperty("Auto Deliver on Connect")]
-            public bool AutoDeliverOnConnect { get; set; } = true;
+            public bool AutoDeliverOnConnect { get; set; } = false;
 
             [JsonProperty("Show UI Notification")]
             public bool ShowUINotification { get; set; } = true;
@@ -42,8 +42,11 @@ namespace Oxide.Plugins
             [JsonProperty("UI Notification Duration (seconds)")]
             public float UINotificationDuration { get; set; } = 10f;
 
-            [JsonProperty("Chat Command")]
-            public string ChatCommand { get; set; } = "claim";
+            [JsonProperty("Chat Command Claim")]
+            public string ChatCommandClaim { get; set; } = "claim";
+
+            [JsonProperty("Chat Command Cart")]
+            public string ChatCommandCart { get; set; } = "cart";
 
             [JsonProperty("Console Command")]
             public string ConsoleCommand { get; set; } = "shop.claim";
@@ -91,34 +94,49 @@ namespace Oxide.Plugins
                 ["ItemFailed"] = "✗ Failed to deliver: {0} - {1}",
                 ["AllDelivered"] = "All items have been delivered!",
                 ["SomeDelivered"] = "{0} of {1} items delivered. Some failed.",
-                ["PendingItems"] = "You have {0} item(s) waiting! Type /{1} to claim.",
+                ["PendingItems"] = "You have {0} item(s) waiting! Type /{1} to open cart.",
                 ["UITitle"] = "SHOP DELIVERY",
-                ["UIClaimButton"] = "CLAIM ITEMS",
+                ["UIClaimButton"] = "CLAIM",
                 ["UIItemsWaiting"] = "{0} item(s) waiting",
                 ["Error"] = "An error occurred. Please try again later.",
-                ["Cooldown"] = "Please wait {0} seconds before claiming again."
+                ["Cooldown"] = "Please wait {0} seconds before claiming again.",
+                ["CartTitle"] = "🛒 MY CART",
+                ["CartEmpty"] = "Your cart is empty",
+                ["CartClaimAll"] = "CLAIM ALL",
+                ["CartClose"] = "CLOSE",
+                ["CartQuantity"] = "x{0}",
+                ["CartLoading"] = "Loading...",
+                ["CartItemClaim"] = "CLAIM"
             }, this);
 
+            // Russian language - using escaped Unicode for proper encoding
             lang.RegisterMessages(new Dictionary<string, string>
             {
-                ["NoItems"] = "У вас нет товаров для получения.",
-                ["ClaimingItems"] = "Получение {0} товар(ов)...",
-                ["ItemDelivered"] = "✓ Доставлено: {0} x{1}",
-                ["ItemFailed"] = "✗ Ошибка доставки: {0} - {1}",
-                ["AllDelivered"] = "Все товары доставлены!",
-                ["SomeDelivered"] = "{0} из {1} товаров доставлено. Некоторые не удались.",
-                ["PendingItems"] = "У вас {0} товар(ов) ожидает! Введите /{1} чтобы получить.",
-                ["UITitle"] = "ДОСТАВКА",
-                ["UIClaimButton"] = "ПОЛУЧИТЬ",
-                ["UIItemsWaiting"] = "{0} товар(ов) ожидает",
-                ["Error"] = "Произошла ошибка. Попробуйте позже.",
-                ["Cooldown"] = "Подождите {0} секунд перед повторной попыткой."
+                ["NoItems"] = "\u0423 \u0432\u0430\u0441 \u043d\u0435\u0442 \u0442\u043e\u0432\u0430\u0440\u043e\u0432 \u0434\u043b\u044f \u043f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u044f.",
+                ["ClaimingItems"] = "\u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 {0} \u0442\u043e\u0432\u0430\u0440(\u043e\u0432)...",
+                ["ItemDelivered"] = "\u2713 \u0414\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d\u043e: {0} x{1}",
+                ["ItemFailed"] = "\u2717 \u041e\u0448\u0438\u0431\u043a\u0430 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0438: {0} - {1}",
+                ["AllDelivered"] = "\u0412\u0441\u0435 \u0442\u043e\u0432\u0430\u0440\u044b \u0434\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d\u044b!",
+                ["SomeDelivered"] = "{0} \u0438\u0437 {1} \u0442\u043e\u0432\u0430\u0440\u043e\u0432 \u0434\u043e\u0441\u0442\u0430\u0432\u043b\u0435\u043d\u043e. \u041d\u0435\u043a\u043e\u0442\u043e\u0440\u044b\u0435 \u043d\u0435 \u0443\u0434\u0430\u043b\u0438\u0441\u044c.",
+                ["PendingItems"] = "\u0423 \u0432\u0430\u0441 {0} \u0442\u043e\u0432\u0430\u0440(\u043e\u0432) \u043e\u0436\u0438\u0434\u0430\u0435\u0442! \u0412\u0432\u0435\u0434\u0438\u0442\u0435 /{1} \u0447\u0442\u043e\u0431\u044b \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u043e\u0440\u0437\u0438\u043d\u0443.",
+                ["UITitle"] = "\u0414\u041e\u0421\u0422\u0410\u0412\u041a\u0410",
+                ["UIClaimButton"] = "\u041f\u041e\u041b\u0423\u0427\u0418\u0422\u042c",
+                ["UIItemsWaiting"] = "{0} \u0442\u043e\u0432\u0430\u0440(\u043e\u0432) \u043e\u0436\u0438\u0434\u0430\u0435\u0442",
+                ["Error"] = "\u041f\u0440\u043e\u0438\u0437\u043e\u0448\u043b\u0430 \u043e\u0448\u0438\u0431\u043a\u0430. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u043f\u043e\u0437\u0436\u0435.",
+                ["Cooldown"] = "\u041f\u043e\u0434\u043e\u0436\u0434\u0438\u0442\u0435 {0} \u0441\u0435\u043a\u0443\u043d\u0434 \u043f\u0435\u0440\u0435\u0434 \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u043e\u0439 \u043f\u043e\u043f\u044b\u0442\u043a\u043e\u0439.",
+                ["CartTitle"] = "\u041c\u041e\u042f \u041a\u041e\u0420\u0417\u0418\u041d\u0410",
+                ["CartEmpty"] = "\u041a\u043e\u0440\u0437\u0438\u043d\u0430 \u043f\u0443\u0441\u0442\u0430",
+                ["CartClaimAll"] = "\u041f\u041e\u041b\u0423\u0427\u0418\u0422\u042c \u0412\u0421\u0415",
+                ["CartClose"] = "\u0417\u0410\u041a\u0420\u042b\u0422\u042c",
+                ["CartQuantity"] = "x{0}",
+                ["CartLoading"] = "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...",
+                ["CartItemClaim"] = "\u0412\u0417\u042f\u0422\u042c"
             }, this, "ru");
         }
 
-        private string Lang(string key, string userId = null, params object[] args)
+        private string Lang(string key, string oderId = null, params object[] args)
         {
-            return string.Format(lang.GetMessage(key, this, userId), args);
+            return string.Format(lang.GetMessage(key, this, oderId), args);
         }
 
         #endregion
@@ -199,8 +217,9 @@ namespace Oxide.Plugins
         #region Fields
 
         private Dictionary<ulong, float> playerCooldowns = new Dictionary<ulong, float>();
+        private Dictionary<ulong, List<CartEntry>> playerCarts = new Dictionary<ulong, List<CartEntry>>();
         private Dictionary<ulong, int> playerPendingCount = new Dictionary<ulong, int>();
-        private const float COOLDOWN_SECONDS = 5f;
+        private const float COOLDOWN_SECONDS = 3f;
         private Timer checkTimer;
 
         #endregion
@@ -209,7 +228,8 @@ namespace Oxide.Plugins
 
         private void Init()
         {
-            cmd.AddChatCommand(config.ChatCommand, this, nameof(CmdClaim));
+            cmd.AddChatCommand(config.ChatCommandClaim, this, nameof(CmdClaim));
+            cmd.AddChatCommand(config.ChatCommandCart, this, nameof(CmdCart));
             cmd.AddConsoleCommand(config.ConsoleCommand, this, nameof(ConsoleCmdClaim));
         }
 
@@ -238,7 +258,7 @@ namespace Oxide.Plugins
             // Destroy UI for all players
             foreach (var player in BasePlayer.activePlayerList)
             {
-                DestroyUI(player);
+                DestroyAllUI(player);
             }
         }
 
@@ -260,9 +280,10 @@ namespace Oxide.Plugins
         {
             if (player == null) return;
 
-            DestroyUI(player);
+            DestroyAllUI(player);
             playerPendingCount.Remove(player.userID);
             playerCooldowns.Remove(player.userID);
+            playerCarts.Remove(player.userID);
         }
 
         #endregion
@@ -272,14 +293,74 @@ namespace Oxide.Plugins
         private void CmdClaim(BasePlayer player, string command, string[] args)
         {
             if (player == null) return;
-            ClaimItems(player);
+            ClaimAllItems(player);
+        }
+
+        private void CmdCart(BasePlayer player, string command, string[] args)
+        {
+            if (player == null) return;
+            OpenCart(player);
         }
 
         private void ConsoleCmdClaim(ConsoleSystem.Arg arg)
         {
             var player = arg.Player();
             if (player == null) return;
-            ClaimItems(player);
+            ClaimAllItems(player);
+        }
+
+        [ConsoleCommand("gorustshop.cart.open")]
+        private void ConsoleCmdCartOpen(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            OpenCart(player);
+        }
+
+        [ConsoleCommand("gorustshop.cart.close")]
+        private void ConsoleCmdCartClose(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            DestroyCartUI(player);
+        }
+
+        [ConsoleCommand("gorustshop.cart.claimall")]
+        private void ConsoleCmdCartClaimAll(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            DestroyCartUI(player);
+            ClaimAllItems(player);
+        }
+
+        [ConsoleCommand("gorustshop.cart.claimitem")]
+        private void ConsoleCmdCartClaimItem(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+
+            string entryId = arg.GetString(0);
+            if (string.IsNullOrEmpty(entryId)) return;
+
+            ClaimSingleItem(player, entryId);
+        }
+
+        [ConsoleCommand("gorustshop.notify.open")]
+        private void ConsoleCmdNotifyOpen(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            DestroyNotificationUI(player);
+            OpenCart(player);
+        }
+
+        [ConsoleCommand("gorustshop.notify.close")]
+        private void ConsoleCmdNotifyClose(ConsoleSystem.Arg arg)
+        {
+            var player = arg.Player();
+            if (player == null) return;
+            DestroyNotificationUI(player);
         }
 
         [ConsoleCommand("gorustshop.check")]
@@ -290,26 +371,63 @@ namespace Oxide.Plugins
             CheckPendingItems(player, false);
         }
 
-        [ConsoleCommand("gorustshop.ui.claim")]
-        private void ConsoleCmdUIClaim(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
-            DestroyUI(player);
-            ClaimItems(player);
-        }
-
-        [ConsoleCommand("gorustshop.ui.close")]
-        private void ConsoleCmdUIClose(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
-            DestroyUI(player);
-        }
-
         #endregion
 
         #region Core Logic
+
+        private void OpenCart(BasePlayer player)
+        {
+            if (player == null || !player.IsConnected) return;
+
+            DestroyAllUI(player);
+            ShowCartLoadingUI(player);
+
+            string steamId = player.UserIDString;
+            string url = $"{config.ApiBaseUrl}/api/rust/pending.php?steam_id={steamId}";
+
+            if (!string.IsNullOrEmpty(config.ApiKey))
+            {
+                url += $"&api_key={config.ApiKey}";
+            }
+
+            DebugLog($"Opening cart for {player.displayName} ({steamId})");
+
+            webrequest.Enqueue(url, null, (code, response) =>
+            {
+                if (player == null || !player.IsConnected) return;
+
+                DestroyCartUI(player);
+
+                if (code != 200 || string.IsNullOrEmpty(response))
+                {
+                    SendReply(player, Lang("Error", player.UserIDString));
+                    DebugLog($"API error: code={code}, response={response}");
+                    return;
+                }
+
+                try
+                {
+                    var data = JsonConvert.DeserializeObject<PendingResponse>(response);
+
+                    if (!data.Ok)
+                    {
+                        SendReply(player, Lang("Error", player.UserIDString));
+                        DebugLog($"API returned error: {data.Error}");
+                        return;
+                    }
+
+                    playerCarts[player.userID] = data.Entries ?? new List<CartEntry>();
+                    playerPendingCount[player.userID] = data.Count;
+
+                    ShowCartUI(player, data.Entries ?? new List<CartEntry>());
+                }
+                catch (Exception ex)
+                {
+                    SendReply(player, Lang("Error", player.UserIDString));
+                    DebugLog($"Error parsing response: {ex.Message}");
+                }
+            }, this, RequestMethod.GET);
+        }
 
         private void CheckPendingItems(BasePlayer player, bool autoDeliver)
         {
@@ -347,6 +465,7 @@ namespace Oxide.Plugins
 
                     int count = data.Count;
                     playerPendingCount[player.userID] = count;
+                    playerCarts[player.userID] = data.Entries ?? new List<CartEntry>();
 
                     DebugLog($"Player {player.displayName} has {count} pending items");
 
@@ -354,17 +473,17 @@ namespace Oxide.Plugins
                     {
                         if (autoDeliver)
                         {
-                            ClaimItems(player);
+                            ClaimAllItems(player);
                         }
                         else if (config.ShowUINotification)
                         {
                             ShowNotificationUI(player, count);
-                            SendReply(player, Lang("PendingItems", player.UserIDString, count, config.ChatCommand));
+                            SendReply(player, Lang("PendingItems", player.UserIDString, count, config.ChatCommandCart));
                         }
                     }
                     else
                     {
-                        DestroyUI(player);
+                        DestroyNotificationUI(player);
                     }
                 }
                 catch (Exception ex)
@@ -374,14 +493,14 @@ namespace Oxide.Plugins
             }, this, RequestMethod.GET);
         }
 
-        private void ClaimItems(BasePlayer player)
+        private void ClaimAllItems(BasePlayer player)
         {
             if (player == null || !player.IsConnected) return;
 
             // Check cooldown
             if (playerCooldowns.TryGetValue(player.userID, out float lastClaim))
             {
-                float remaining = COOLDOWN_SECONDS - (Time.realtimeSinceStartup - lastClaim);
+                float remaining = COOLDOWN_SECONDS - (UnityEngine.Time.realtimeSinceStartup - lastClaim);
                 if (remaining > 0)
                 {
                     SendReply(player, Lang("Cooldown", player.UserIDString, Math.Ceiling(remaining)));
@@ -389,8 +508,8 @@ namespace Oxide.Plugins
                 }
             }
 
-            playerCooldowns[player.userID] = Time.realtimeSinceStartup;
-            DestroyUI(player);
+            playerCooldowns[player.userID] = UnityEngine.Time.realtimeSinceStartup;
+            DestroyAllUI(player);
 
             string steamId = player.UserIDString;
             string url = $"{config.ApiBaseUrl}/api/rust/claim.php";
@@ -402,7 +521,7 @@ namespace Oxide.Plugins
 
             string body = JsonConvert.SerializeObject(new { steam_id = steamId });
 
-            DebugLog($"Claiming items for {player.displayName} ({steamId})");
+            DebugLog($"Claiming all items for {player.displayName} ({steamId})");
 
             webrequest.Enqueue(url, body, (code, response) =>
             {
@@ -430,6 +549,7 @@ namespace Oxide.Plugins
                     {
                         SendReply(player, Lang("NoItems", player.UserIDString));
                         playerPendingCount[player.userID] = 0;
+                        playerCarts[player.userID] = new List<CartEntry>();
                         return;
                     }
 
@@ -440,7 +560,8 @@ namespace Oxide.Plugins
 
                     foreach (var entry in data.Entries)
                     {
-                        bool success = DeliverItem(player, entry);
+                        string errorReason;
+                        bool success = DeliverItem(player, entry, out errorReason);
 
                         if (success)
                         {
@@ -451,13 +572,14 @@ namespace Oxide.Plugins
                         else
                         {
                             failed++;
-                            string error = "Command execution failed";
+                            string error = errorReason ?? "Unknown error";
                             SendReply(player, Lang("ItemFailed", player.UserIDString, entry.ProductName, error));
                             UpdateEntryStatus(entry.Id, "failed", error);
                         }
                     }
 
                     playerPendingCount[player.userID] = 0;
+                    playerCarts[player.userID] = new List<CartEntry>();
 
                     if (failed == 0)
                     {
@@ -479,10 +601,114 @@ namespace Oxide.Plugins
             });
         }
 
-        private bool DeliverItem(BasePlayer player, CartEntry entry)
+        private void ClaimSingleItem(BasePlayer player, string entryId)
         {
-            if (player == null || entry == null || string.IsNullOrEmpty(entry.RustCommand))
+            if (player == null || !player.IsConnected) return;
+
+            // Check cooldown
+            if (playerCooldowns.TryGetValue(player.userID, out float lastClaim))
             {
+                float remaining = COOLDOWN_SECONDS - (UnityEngine.Time.realtimeSinceStartup - lastClaim);
+                if (remaining > 0)
+                {
+                    SendReply(player, Lang("Cooldown", player.UserIDString, Math.Ceiling(remaining)));
+                    return;
+                }
+            }
+
+            playerCooldowns[player.userID] = UnityEngine.Time.realtimeSinceStartup;
+
+            // Find the entry in cached cart
+            if (!playerCarts.TryGetValue(player.userID, out var cart) || cart == null)
+            {
+                SendReply(player, Lang("Error", player.UserIDString));
+                return;
+            }
+
+            var entry = cart.FirstOrDefault(e => e.Id == entryId);
+            if (entry == null)
+            {
+                SendReply(player, Lang("Error", player.UserIDString));
+                return;
+            }
+
+            DebugLog($"Claiming single item {entryId} for {player.displayName}");
+
+            // Mark as delivering on server
+            string url = $"{config.ApiBaseUrl}/api/rust/update.php";
+            if (!string.IsNullOrEmpty(config.ApiKey))
+            {
+                url += $"?api_key={config.ApiKey}";
+            }
+
+            var payload = new { entry_id = entryId, status = "delivering" };
+            string body = JsonConvert.SerializeObject(payload);
+
+            webrequest.Enqueue(url, body, (code, response) =>
+            {
+                if (player == null || !player.IsConnected) return;
+
+                // Deliver the item
+                string errorReason;
+                bool success = DeliverItem(player, entry, out errorReason);
+
+                if (success)
+                {
+                    SendReply(player, Lang("ItemDelivered", player.UserIDString, entry.ProductName, entry.Quantity));
+                    UpdateEntryStatus(entry.Id, "delivered", null);
+
+                    // Remove from local cache
+                    if (playerCarts.TryGetValue(player.userID, out var currentCart))
+                    {
+                        currentCart.RemoveAll(e => e.Id == entryId);
+                        playerPendingCount[player.userID] = currentCart.Count;
+                    }
+
+                    // Refresh cart UI
+                    if (playerCarts.TryGetValue(player.userID, out var updatedCart))
+                    {
+                        DestroyCartUI(player);
+                        if (updatedCart.Count > 0)
+                        {
+                            ShowCartUI(player, updatedCart);
+                        }
+                    }
+                }
+                else
+                {
+                    string error = errorReason ?? "Unknown error";
+                    SendReply(player, Lang("ItemFailed", player.UserIDString, entry.ProductName, error));
+                    UpdateEntryStatus(entry.Id, "failed", error);
+                }
+            }, this, RequestMethod.POST, new Dictionary<string, string>
+            {
+                { "Content-Type", "application/json" }
+            });
+        }
+
+        private bool DeliverItem(BasePlayer player, CartEntry entry, out string errorReason)
+        {
+            errorReason = null;
+            
+            if (player == null)
+            {
+                errorReason = "Player is null";
+                Puts($"[ERROR] DeliverItem failed: {errorReason}");
+                return false;
+            }
+            
+            if (entry == null)
+            {
+                errorReason = "Entry is null";
+                Puts($"[ERROR] DeliverItem failed: {errorReason}");
+                return false;
+            }
+            
+            if (string.IsNullOrEmpty(entry.RustCommand))
+            {
+                errorReason = $"Rust command is empty for product '{entry.ProductName}' (ID: {entry.Id})";
+                Puts($"[ERROR] DeliverItem failed: {errorReason}");
+                Puts($"[ERROR] Entry data: ProductId={entry.ProductId}, OrderId={entry.OrderId}, Quantity={entry.Quantity}");
                 return false;
             }
 
@@ -496,16 +722,19 @@ namespace Oxide.Plugins
                     .Replace("{orderId}", entry.OrderId ?? "")
                     .Replace("{username}", SanitizeUsername(player.displayName));
 
-                DebugLog($"Executing command: {command}");
+                Puts($"[INFO] Executing command for {player.displayName}: {command}");
 
                 // Execute the command
                 ConsoleSystem.Run(ConsoleSystem.Option.Server, command);
 
+                Puts($"[INFO] Command executed successfully");
                 return true;
             }
             catch (Exception ex)
             {
-                DebugLog($"Error executing command: {ex.Message}");
+                errorReason = $"Exception: {ex.Message}";
+                Puts($"[ERROR] Error executing command: {ex.Message}");
+                Puts($"[ERROR] Stack trace: {ex.StackTrace}");
                 return false;
             }
         }
@@ -559,25 +788,337 @@ namespace Oxide.Plugins
 
         #endregion
 
-        #region UI
+        #region Cart UI
 
-        private const string UI_PANEL = "GoRustShop_Notification";
+        private const string UI_CART = "GoRustShop_Cart";
+        private const string UI_NOTIFICATION = "GoRustShop_Notification";
+
+        private void ShowCartUI(BasePlayer player, List<CartEntry> entries)
+        {
+            if (player == null || !player.IsConnected) return;
+
+            DestroyCartUI(player);
+
+            var elements = new CuiElementContainer();
+
+            // Background overlay
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0 0 0 0.85" },
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                CursorEnabled = true
+            }, "Overlay", UI_CART);
+
+            // Main panel
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0.1 0.1 0.12 0.98" },
+                RectTransform = { AnchorMin = "0.25 0.15", AnchorMax = "0.75 0.85" }
+            }, UI_CART, UI_CART + "_Main");
+
+            // Header
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0.15 0.15 0.18 1" },
+                RectTransform = { AnchorMin = "0 0.9", AnchorMax = "1 1" }
+            }, UI_CART + "_Main", UI_CART + "_Header");
+
+            // Title
+            elements.Add(new CuiLabel
+            {
+                Text = {
+                    Text = Lang("CartTitle", player.UserIDString),
+                    FontSize = 22,
+                    Align = TextAnchor.MiddleLeft,
+                    Color = "0.9 0.75 0.2 1"
+                },
+                RectTransform = { AnchorMin = "0.03 0", AnchorMax = "0.6 1" }
+            }, UI_CART + "_Header");
+
+            // Close button
+            elements.Add(new CuiButton
+            {
+                Button = {
+                    Command = "gorustshop.cart.close",
+                    Color = "0.6 0.2 0.2 1"
+                },
+                RectTransform = { AnchorMin = "0.9 0.2", AnchorMax = "0.98 0.8" },
+                Text = {
+                    Text = "✕",
+                    FontSize = 18,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = "1 1 1 1"
+                }
+            }, UI_CART + "_Header");
+
+            // Content area
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0.08 0.08 0.1 1" },
+                RectTransform = { AnchorMin = "0.02 0.12", AnchorMax = "0.98 0.88" }
+            }, UI_CART + "_Main", UI_CART + "_Content");
+
+            if (entries.Count == 0)
+            {
+                // Empty cart message
+                elements.Add(new CuiLabel
+                {
+                    Text = {
+                        Text = Lang("CartEmpty", player.UserIDString),
+                        FontSize = 20,
+                        Align = TextAnchor.MiddleCenter,
+                        Color = "0.5 0.5 0.5 1"
+                    },
+                    RectTransform = { AnchorMin = "0 0.4", AnchorMax = "1 0.6" }
+                }, UI_CART + "_Content");
+            }
+            else
+            {
+                // Items list
+                float itemHeight = 0.12f;
+                float spacing = 0.02f;
+                float startY = 0.98f;
+                int maxVisible = 6;
+
+                for (int i = 0; i < Math.Min(entries.Count, maxVisible); i++)
+                {
+                    var entry = entries[i];
+                    float top = startY - (i * (itemHeight + spacing));
+                    float bottom = top - itemHeight;
+
+                    string itemId = $"{UI_CART}_Item_{i}";
+
+                    // Item row background
+                    elements.Add(new CuiPanel
+                    {
+                        Image = { Color = "0.15 0.15 0.18 1" },
+                        RectTransform = { AnchorMin = $"0.01 {bottom}", AnchorMax = $"0.99 {top}" }
+                    }, UI_CART + "_Content", itemId);
+
+                    // Product icon placeholder
+                    elements.Add(new CuiPanel
+                    {
+                        Image = { Color = "0.2 0.5 0.3 1" },
+                        RectTransform = { AnchorMin = "0.01 0.1", AnchorMax = "0.08 0.9" }
+                    }, itemId);
+
+                    elements.Add(new CuiLabel
+                    {
+                        Text = {
+                            Text = "📦",
+                            FontSize = 20,
+                            Align = TextAnchor.MiddleCenter,
+                            Color = "1 1 1 1"
+                        },
+                        RectTransform = { AnchorMin = "0.01 0.1", AnchorMax = "0.08 0.9" }
+                    }, itemId);
+
+                    // Product name
+                    elements.Add(new CuiLabel
+                    {
+                        Text = {
+                            Text = entry.ProductName ?? "Item",
+                            FontSize = 14,
+                            Align = TextAnchor.MiddleLeft,
+                            Color = "1 1 1 1"
+                        },
+                        RectTransform = { AnchorMin = "0.1 0.5", AnchorMax = "0.65 0.95" }
+                    }, itemId);
+
+                    // Order ID
+                    elements.Add(new CuiLabel
+                    {
+                        Text = {
+                            Text = entry.OrderId ?? "",
+                            FontSize = 10,
+                            Align = TextAnchor.MiddleLeft,
+                            Color = "0.5 0.5 0.5 1"
+                        },
+                        RectTransform = { AnchorMin = "0.1 0.1", AnchorMax = "0.65 0.45" }
+                    }, itemId);
+
+                    // Quantity
+                    elements.Add(new CuiLabel
+                    {
+                        Text = {
+                            Text = Lang("CartQuantity", player.UserIDString, entry.Quantity),
+                            FontSize = 14,
+                            Align = TextAnchor.MiddleCenter,
+                            Color = "0.9 0.75 0.2 1"
+                        },
+                        RectTransform = { AnchorMin = "0.65 0.2", AnchorMax = "0.75 0.8" }
+                    }, itemId);
+
+                    // Claim button for this item
+                    elements.Add(new CuiButton
+                    {
+                        Button = {
+                            Command = $"gorustshop.cart.claimitem {entry.Id}",
+                            Color = "0.2 0.5 0.3 1"
+                        },
+                        RectTransform = { AnchorMin = "0.77 0.15", AnchorMax = "0.98 0.85" },
+                        Text = {
+                            Text = Lang("CartItemClaim", player.UserIDString),
+                            FontSize = 12,
+                            Align = TextAnchor.MiddleCenter,
+                            Color = "1 1 1 1"
+                        }
+                    }, itemId);
+                }
+
+                // Show "and X more..." if there are more items
+                if (entries.Count > maxVisible)
+                {
+                    float top = startY - (maxVisible * (itemHeight + spacing));
+                    elements.Add(new CuiLabel
+                    {
+                        Text = {
+                            Text = $"... and {entries.Count - maxVisible} more item(s)",
+                            FontSize = 12,
+                            Align = TextAnchor.MiddleCenter,
+                            Color = "0.6 0.6 0.6 1"
+                        },
+                        RectTransform = { AnchorMin = $"0 {top - 0.08f}", AnchorMax = $"1 {top}" }
+                    }, UI_CART + "_Content");
+                }
+            }
+
+            // Footer
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0.12 0.12 0.15 1" },
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 0.1" }
+            }, UI_CART + "_Main", UI_CART + "_Footer");
+
+            // Items count
+            elements.Add(new CuiLabel
+            {
+                Text = {
+                    Text = Lang("UIItemsWaiting", player.UserIDString, entries.Count),
+                    FontSize = 14,
+                    Align = TextAnchor.MiddleLeft,
+                    Color = "0.7 0.7 0.7 1"
+                },
+                RectTransform = { AnchorMin = "0.03 0", AnchorMax = "0.4 1" }
+            }, UI_CART + "_Footer");
+
+            if (entries.Count > 0)
+            {
+                // Claim All button
+                elements.Add(new CuiButton
+                {
+                    Button = {
+                        Command = "gorustshop.cart.claimall",
+                        Color = "0.2 0.6 0.3 1"
+                    },
+                    RectTransform = { AnchorMin = "0.55 0.15", AnchorMax = "0.78 0.85" },
+                    Text = {
+                        Text = Lang("CartClaimAll", player.UserIDString),
+                        FontSize = 14,
+                        Align = TextAnchor.MiddleCenter,
+                        Color = "1 1 1 1"
+                    }
+                }, UI_CART + "_Footer");
+            }
+
+            // Close button
+            elements.Add(new CuiButton
+            {
+                Button = {
+                    Command = "gorustshop.cart.close",
+                    Color = "0.4 0.4 0.4 1"
+                },
+                RectTransform = { AnchorMin = "0.8 0.15", AnchorMax = "0.97 0.85" },
+                Text = {
+                    Text = Lang("CartClose", player.UserIDString),
+                    FontSize = 14,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = "1 1 1 1"
+                }
+            }, UI_CART + "_Footer");
+
+            CuiHelper.AddUi(player, elements);
+        }
+
+        private void ShowCartLoadingUI(BasePlayer player)
+        {
+            if (player == null || !player.IsConnected) return;
+
+            var elements = new CuiElementContainer();
+
+            // Background overlay
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0 0 0 0.85" },
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                CursorEnabled = true
+            }, "Overlay", UI_CART);
+
+            // Loading panel
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0.1 0.1 0.12 0.98" },
+                RectTransform = { AnchorMin = "0.35 0.4", AnchorMax = "0.65 0.6" }
+            }, UI_CART, UI_CART + "_Loading");
+
+            elements.Add(new CuiLabel
+            {
+                Text = {
+                    Text = Lang("CartLoading", player.UserIDString),
+                    FontSize = 18,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = "0.8 0.8 0.8 1"
+                },
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
+            }, UI_CART + "_Loading");
+
+            CuiHelper.AddUi(player, elements);
+        }
+
+        private void DestroyCartUI(BasePlayer player)
+        {
+            if (player == null) return;
+            CuiHelper.DestroyUi(player, UI_CART);
+        }
+
+        #endregion
+
+        #region Notification UI
 
         private void ShowNotificationUI(BasePlayer player, int itemCount)
         {
             if (player == null || !player.IsConnected) return;
 
-            DestroyUI(player);
+            DestroyNotificationUI(player);
 
             var elements = new CuiElementContainer();
 
             // Main panel
             elements.Add(new CuiPanel
             {
-                Image = { Color = "0.1 0.1 0.1 0.95" },
+                Image = { Color = "0.1 0.1 0.12 0.95" },
                 RectTransform = { AnchorMin = "0.35 0.85", AnchorMax = "0.65 0.95" },
                 CursorEnabled = false
-            }, "Overlay", UI_PANEL);
+            }, "Overlay", UI_NOTIFICATION);
+
+            // Left accent
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0.2 0.6 0.3 1" },
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "0.01 1" }
+            }, UI_NOTIFICATION);
+
+            // Icon
+            elements.Add(new CuiLabel
+            {
+                Text = {
+                    Text = "🛒",
+                    FontSize = 24,
+                    Align = TextAnchor.MiddleCenter,
+                    Color = "1 1 1 1"
+                },
+                RectTransform = { AnchorMin = "0.02 0", AnchorMax = "0.12 1" }
+            }, UI_NOTIFICATION);
 
             // Title
             elements.Add(new CuiLabel
@@ -585,11 +1126,11 @@ namespace Oxide.Plugins
                 Text = {
                     Text = Lang("UITitle", player.UserIDString),
                     FontSize = 14,
-                    Align = TextAnchor.MiddleCenter,
-                    Color = "0.9 0.7 0.2 1"
+                    Align = TextAnchor.MiddleLeft,
+                    Color = "0.9 0.75 0.2 1"
                 },
-                RectTransform = { AnchorMin = "0 0.6", AnchorMax = "1 1" }
-            }, UI_PANEL);
+                RectTransform = { AnchorMin = "0.14 0.55", AnchorMax = "0.5 0.95" }
+            }, UI_NOTIFICATION);
 
             // Items waiting text
             elements.Add(new CuiLabel
@@ -597,43 +1138,43 @@ namespace Oxide.Plugins
                 Text = {
                     Text = Lang("UIItemsWaiting", player.UserIDString, itemCount),
                     FontSize = 12,
-                    Align = TextAnchor.MiddleCenter,
-                    Color = "0.8 0.8 0.8 1"
+                    Align = TextAnchor.MiddleLeft,
+                    Color = "0.7 0.7 0.7 1"
                 },
-                RectTransform = { AnchorMin = "0 0.35", AnchorMax = "0.5 0.6" }
-            }, UI_PANEL);
+                RectTransform = { AnchorMin = "0.14 0.1", AnchorMax = "0.5 0.5" }
+            }, UI_NOTIFICATION);
 
-            // Claim button
+            // Open Cart button
             elements.Add(new CuiButton
             {
                 Button = {
-                    Command = "gorustshop.ui.claim",
-                    Color = "0.3 0.6 0.2 1"
+                    Command = "gorustshop.notify.open",
+                    Color = "0.2 0.5 0.3 1"
                 },
-                RectTransform = { AnchorMin = "0.52 0.15", AnchorMax = "0.85 0.55" },
+                RectTransform = { AnchorMin = "0.55 0.2", AnchorMax = "0.82 0.8" },
                 Text = {
                     Text = Lang("UIClaimButton", player.UserIDString),
                     FontSize = 12,
                     Align = TextAnchor.MiddleCenter,
                     Color = "1 1 1 1"
                 }
-            }, UI_PANEL);
+            }, UI_NOTIFICATION);
 
             // Close button
             elements.Add(new CuiButton
             {
                 Button = {
-                    Command = "gorustshop.ui.close",
+                    Command = "gorustshop.notify.close",
                     Color = "0.5 0.2 0.2 1"
                 },
-                RectTransform = { AnchorMin = "0.87 0.15", AnchorMax = "0.98 0.55" },
+                RectTransform = { AnchorMin = "0.85 0.2", AnchorMax = "0.98 0.8" },
                 Text = {
                     Text = "✕",
                     FontSize = 14,
                     Align = TextAnchor.MiddleCenter,
                     Color = "1 1 1 1"
                 }
-            }, UI_PANEL);
+            }, UI_NOTIFICATION);
 
             CuiHelper.AddUi(player, elements);
 
@@ -642,15 +1183,21 @@ namespace Oxide.Plugins
             {
                 if (player != null && player.IsConnected)
                 {
-                    DestroyUI(player);
+                    DestroyNotificationUI(player);
                 }
             });
         }
 
-        private void DestroyUI(BasePlayer player)
+        private void DestroyNotificationUI(BasePlayer player)
         {
             if (player == null) return;
-            CuiHelper.DestroyUi(player, UI_PANEL);
+            CuiHelper.DestroyUi(player, UI_NOTIFICATION);
+        }
+
+        private void DestroyAllUI(BasePlayer player)
+        {
+            DestroyCartUI(player);
+            DestroyNotificationUI(player);
         }
 
         #endregion
@@ -681,7 +1228,16 @@ namespace Oxide.Plugins
         {
             if (player != null)
             {
-                ClaimItems(player);
+                ClaimAllItems(player);
+            }
+        }
+
+        // Public API to open cart
+        private void TriggerOpenCart(BasePlayer player)
+        {
+            if (player != null)
+            {
+                OpenCart(player);
             }
         }
 

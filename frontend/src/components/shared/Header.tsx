@@ -1,14 +1,63 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 import { useCart } from "../../context/CartContext";
 import { useUserSession } from "../../context/UserSessionContext";
 import { useI18n } from "../../i18n/I18nContext";
+import { fetchProducts } from "../../api/products";
+import { Product } from "../../types";
 
 const Header = () => {
   const { count } = useCart();
   const { authenticated, user, logout } = useUserSession();
-  const { lang, setLang, t } = useI18n();
+  const { lang, setLang, t, region } = useI18n();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [showResults, setShowResults] = useState(false);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  // Load products for search
+  useEffect(() => {
+    fetchProducts(region).then(setAllProducts).catch(() => setAllProducts([]));
+  }, [region]);
+
+  // Filter products by search query
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const query = searchQuery.toLowerCase();
+    const filtered = allProducts
+      .filter((p) => p.is_active !== false)
+      .filter((p) => 
+        (p.name?.toLowerCase().includes(query)) ||
+        (p.title?.toLowerCase().includes(query)) ||
+        (p.category?.toLowerCase().includes(query))
+      )
+      .slice(0, 6);
+    setSearchResults(filtered);
+  }, [searchQuery, allProducts]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleProductClick = (productId: string) => {
+    setShowResults(false);
+    setSearchQuery("");
+    navigate(`/product/${productId}`);
+  };
+
   return (
     <>
       <header className="header">
@@ -20,11 +69,41 @@ const Header = () => {
           <nav className="nav">
             <Link to="/catalog">{t("nav.catalog")}</Link>
             <Link to="/support">{t("nav.support")}</Link>
-            <Link to="/account">{t("nav.account")}</Link>
           </nav>
-          <div className="search">
+          <div className="search" ref={searchRef}>
             <span>🔍</span>
-            <input type="search" placeholder={t("nav.search")} aria-label={t("nav.search")} />
+            <input 
+              type="search" 
+              placeholder={t("nav.search")} 
+              aria-label={t("nav.search")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowResults(true)}
+            />
+            {showResults && searchResults.length > 0 && (
+              <div className="search-dropdown">
+                {searchResults.map((product) => (
+                  <div 
+                    key={product.id} 
+                    className="search-result-item"
+                    onClick={() => handleProductClick(product.id)}
+                  >
+                    <img src={product.image} alt={product.name || product.title} />
+                    <div className="search-result-info">
+                      <span className="search-result-name">{product.name || product.title}</span>
+                      <span className="search-result-price">{product.priceFormatted}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {showResults && searchQuery.length >= 2 && searchResults.length === 0 && (
+              <div className="search-dropdown">
+                <div className="search-no-results">
+                  {lang === "ru" ? "Ничего не найдено" : "No results found"}
+                </div>
+              </div>
+            )}
           </div>
           <div className="nav" style={{ gap: "0.4rem" }}>
             <button
@@ -91,8 +170,8 @@ const Header = () => {
           <nav className="grid">
             <Link to="/catalog">{t("nav.catalog")}</Link>
             <Link to="/support">{t("nav.support")}</Link>
-            <Link to="/account">{t("nav.account")}</Link>
             <Link to="/cart">{t("nav.cart")}</Link>
+            {authenticated && <Link to="/account">{t("nav.account")}</Link>}
           </nav>
           <div style={{ marginTop: "2rem" }}>
             {authenticated ? (

@@ -5,6 +5,7 @@ import { FeaturedDrop, Product } from "../types";
 import { useCart } from "../context/CartContext";
 import { fetchFeaturedDrop, fetchStats } from "../api/site";
 import { useI18n } from "../i18n/I18nContext";
+import { useUserSession } from "../context/UserSessionContext";
 
 const Home = () => {
   const [featured, setFeatured] = useState<Product[]>([]);
@@ -12,6 +13,7 @@ const Home = () => {
   const [stats, setStats] = useState({ orders_delivered: 214, active_players: 23 });
   const [featuredDrop, setFeaturedDrop] = useState<FeaturedDrop | null>(null);
   const { t, region } = useI18n();
+  const { authenticated } = useUserSession();
 
   useEffect(() => {
     const load = async () => {
@@ -37,13 +39,22 @@ const Home = () => {
             <div className="badge">{t("home.badge")}</div>
             <h1>{t("home.title")}</h1>
             <p className="muted">{t("home.subtitle")}</p>
-            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-              <Link className="btn btn-primary" to="/catalog">
-                {t("home.shopNow")}
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+              <Link className="btn-fancy" to="/catalog">
+                <div id="container-stars">
+                  <div id="stars"></div>
+                </div>
+                <div id="glow">
+                  <div className="circle"></div>
+                  <div className="circle"></div>
+                </div>
+                <strong>{t("home.shopNow")}</strong>
               </Link>
-              <Link className="btn btn-secondary" to="/account">
-                {t("home.signIn")}
-              </Link>
+              {!authenticated && (
+                <a className="btn btn-secondary" href="/api/auth/steam-login.php">
+                  {t("home.signIn")}
+                </a>
+              )}
             </div>
             <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", marginTop: "2rem" }}>
               <div>

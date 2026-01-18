@@ -1131,7 +1131,7 @@ function seed_products_from_json(): void
             continue;
         }
         $now = date("c");
-        $stmt->execute([
+    $stmt->execute([
             "id" => sanitize_text($item["id"] ?? ""),
             "name" => sanitize_text($item["name"] ?? ""),
             "title" => sanitize_text($item["title"] ?? ""),
@@ -1154,8 +1154,8 @@ function seed_products_from_json(): void
             "is_featured" => !empty($item["is_featured"]) ? 1 : 0,
             "featured_order" => intval($item["featured_order"] ?? 0),
             "created_at" => $item["created_at"] ?? date("Y-m-d"),
-            "updated_at" => $now
-        ]);
+        "updated_at" => $now
+    ]);
     }
     $pdo->commit();
 }
