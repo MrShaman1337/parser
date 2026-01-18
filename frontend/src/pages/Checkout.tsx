@@ -12,20 +12,31 @@ const Checkout = () => {
   const [successOpen, setSuccessOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
-  const { t, lang, region } = useI18n();
+  const { t, lang } = useI18n();
   const [servers, setServers] = useState<Server[]>([]);
   const [selectedServer, setSelectedServer] = useState("");
   const [loadingServers, setLoadingServers] = useState(true);
 
-  // Load available servers
+  // Load available servers from both regions
   useEffect(() => {
     const loadServers = async () => {
       try {
-        const res = await fetch(`/api/servers.php?region=${region}`);
-        const data = await res.json();
-        if (data.ok && data.servers?.length > 0) {
-          setServers(data.servers);
-          setSelectedServer(data.servers[0].id);
+        const [euRes, ruRes] = await Promise.all([
+          fetch("/api/servers.php?region=eu"),
+          fetch("/api/servers.php?region=ru")
+        ]);
+        const [euData, ruData] = await Promise.all([
+          euRes.json(),
+          ruRes.json()
+        ]);
+        
+        const allServers: Server[] = [];
+        if (euData.ok) allServers.push(...(euData.servers || []));
+        if (ruData.ok) allServers.push(...(ruData.servers || []));
+        
+        if (allServers.length > 0) {
+          setServers(allServers);
+          setSelectedServer(allServers[0].id);
         }
       } catch (e) {
         console.error("Failed to load servers", e);
@@ -33,7 +44,7 @@ const Checkout = () => {
       setLoadingServers(false);
     };
     loadServers();
-  }, [region]);
+  }, []);
 
   const balance = user?.balance ?? 0;
   const canAfford = balance >= total;
@@ -265,7 +276,7 @@ const Checkout = () => {
               >
                 {servers.map(server => (
                   <option key={server.id} value={server.id}>
-                    {server.name} ({server.current_players}/{server.max_players} {lang === "ru" ? "игроков" : "players"})
+                    [{server.region?.toUpperCase() || "EU"}] {server.name} ({server.current_players}/{server.max_players} {lang === "ru" ? "игроков" : "players"})
                   </option>
                 ))}
               </select>

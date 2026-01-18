@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useUserSession } from "../../context/UserSessionContext";
+import { useAdminSession } from "../../context/AdminSessionContext";
 
 interface Server {
   id: string;
@@ -39,7 +39,7 @@ const emptyServer: Partial<Server> = {
 };
 
 const AdminServers = () => {
-  const { csrf } = useUserSession();
+  const { csrf } = useAdminSession();
   const [servers, setServers] = useState<Server[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);

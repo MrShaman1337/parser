@@ -10,6 +10,7 @@ import {
 } from "../../api/admin";
 import { useAdminSession } from "../../context/AdminSessionContext";
 import { Product } from "../../types";
+import RustItemPicker from "../../components/admin/RustItemPicker";
 
 const emptyProduct: Partial<Product> = {
   name: "",
@@ -57,6 +58,7 @@ const AdminDashboard = () => {
   const [form, setForm] = useState<Partial<Product>>(emptyProduct);
   const [dropForm, setDropForm] = useState({ ...emptyFeaturedDrop });
   const [dragId, setDragId] = useState<string | null>(null);
+  const [itemPickerOpen, setItemPickerOpen] = useState(false);
 
   const toInputValue = (value?: string[] | string) => {
     if (Array.isArray(value)) return value.join(", ");
@@ -482,6 +484,16 @@ const AdminDashboard = () => {
                   <option value="privilege">Privilege / VIP</option>
                   <option value="mixed">Mixed</option>
                 </select>
+                {form.product_type === "item" && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ marginTop: "0.5rem", width: "100%" }}
+                    onClick={() => setItemPickerOpen(true)}
+                  >
+                    📦 Список предметов
+                  </button>
+                )}
               </div>
               <div className="admin-form-wide">
                 <label>Rust Console Command</label>
@@ -583,6 +595,21 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+
+      {itemPickerOpen && (
+        <RustItemPicker
+          onClose={() => setItemPickerOpen(false)}
+          onSelect={(item) => {
+            setForm((prev) => ({
+              ...prev,
+              name: item.name,
+              rust_command_template: item.command,
+              image: item.image
+            }));
+            setItemPickerOpen(false);
+          }}
+        />
+      )}
     </>
   );
 };

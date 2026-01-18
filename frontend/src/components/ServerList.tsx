@@ -17,16 +17,26 @@ interface Server {
 const ServerList = () => {
   const [servers, setServers] = useState<Server[]>([]);
   const [loading, setLoading] = useState(true);
-  const { region, lang } = useI18n();
+  const { lang } = useI18n();
 
   useEffect(() => {
     const loadServers = async () => {
       try {
-        const res = await fetch(`/api/servers.php?region=${region}`);
-        const data = await res.json();
-        if (data.ok) {
-          setServers(data.servers || []);
-        }
+        // Load servers from both regions
+        const [euRes, ruRes] = await Promise.all([
+          fetch("/api/servers.php?region=eu"),
+          fetch("/api/servers.php?region=ru")
+        ]);
+        const [euData, ruData] = await Promise.all([
+          euRes.json(),
+          ruRes.json()
+        ]);
+        
+        const allServers: Server[] = [];
+        if (euData.ok) allServers.push(...(euData.servers || []));
+        if (ruData.ok) allServers.push(...(ruData.servers || []));
+        
+        setServers(allServers);
       } catch (e) {
         console.error("Failed to load servers", e);
       }
@@ -37,7 +47,7 @@ const ServerList = () => {
     // Refresh every 30 seconds
     const interval = setInterval(loadServers, 30000);
     return () => clearInterval(interval);
-  }, [region]);
+  }, []);
 
   if (loading) {
     return (
@@ -76,6 +86,21 @@ const ServerList = () => {
                   }} 
                 />
                 <span className="server-name">{server.name}</span>
+                <span 
+                  className="server-region-badge"
+                  style={{
+                    marginLeft: "auto",
+                    fontSize: "0.7rem",
+                    padding: "0.15rem 0.4rem",
+                    borderRadius: "4px",
+                    background: server.region === "eu" ? "rgba(59,130,246,0.2)" : "rgba(239,68,68,0.2)",
+                    color: server.region === "eu" ? "#3b82f6" : "#ef4444",
+                    fontWeight: 600,
+                    textTransform: "uppercase"
+                  }}
+                >
+                  {server.region}
+                </span>
               </div>
               
               <div className="server-players">

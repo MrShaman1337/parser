@@ -15,7 +15,7 @@ $columnNames = array_map(function ($col) {
 }, $columns);
 if (!in_array("region", $columnNames, true)) {
     $pdo->exec("ALTER TABLE featured_drop ADD COLUMN region TEXT NOT NULL DEFAULT 'eu'");
-}
+    }
 $regionId = $region === "ru" ? 2 : 1;
 $stmt = $pdo->prepare("INSERT OR IGNORE INTO featured_drop (id, region, cta_text, is_enabled, updated_at) VALUES (:id, :region, 'Add VIP', 0, :updated_at)");
 $stmt->execute(["id" => $regionId, "region" => $region, "updated_at" => date("c")]);

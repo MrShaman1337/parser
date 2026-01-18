@@ -1,0 +1,15 @@
+{
+  "Player Threshold (disable movement when online >= this)": 50,
+  "Check Interval (seconds)": 10.0,
+  "Disable Animal Movement": true,
+  "Disable NPC Movement": true,
+  "Exclude Raidable Bases Bots": true,
+  "Exclude BotSpawn Bots": true,
+  "Exclude NPC from Plugins (prefab contains)": [
+    "scientistnpc_roam",
+    "scientistnpc_patrol"
+  ],
+  "Keep Bot Shooting AI": true,
+  "Notify Admins on State Change": true,
+  "Debug Mode": false
+}
